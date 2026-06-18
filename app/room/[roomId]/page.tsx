@@ -12,7 +12,7 @@ import { GameEnded } from "@/components/game/GameEnded";
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
-  const { gameState, isHost, connected, playerCount, dispatch } =
+  const { gameState, isHost, connected, connectionError, playerCount, dispatch } =
     useGameRoom(roomId);
 
   // Keep screen awake during gameplay
@@ -26,6 +26,28 @@ export default function RoomPage() {
       .catch(() => {});
     return () => { lock?.release(); };
   }, [gameState.phase]);
+
+  if (connectionError) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-950 px-6">
+        <div className="text-center space-y-4 max-w-xs">
+          <div className="text-5xl">⚠️</div>
+          <p className="text-white text-xl font-bold">לא ניתן להתחבר</p>
+          <p className="text-gray-400 text-sm">
+            בדוק שמשתני הסביבה של Supabase מוגדרים נכון ב-
+            <code className="text-gray-300 mx-1">.env.local</code>
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-6 py-3 rounded-xl text-white font-bold touch-manipulation"
+            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}
+          >
+            נסה שוב
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!connected) {
     return (

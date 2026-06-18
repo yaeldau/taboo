@@ -27,6 +27,7 @@ export function useGameRoom(roomId: string) {
   const [gameState, setGameState] = useState<GameState>(DEFAULT_GAME_STATE);
   const [isHost, setIsHost] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
 
   const stateRef = useRef<GameState>(DEFAULT_GAME_STATE);
@@ -135,13 +136,19 @@ export function useGameRoom(roomId: string) {
         if (status === "SUBSCRIBED") {
           setConnected(true);
           await channel.track({ joined_at: Date.now() });
+        } else if (status === "TIMED_OUT" || status === "CHANNEL_ERROR") {
+          setConnectionError(true);
         }
       });
 
+    // Fail visibly after 8 seconds rather than spinning forever
+    const timeout = setTimeout(() => setConnectionError(true), 8000);
+
     return () => {
+      clearTimeout(timeout);
       channel.unsubscribe();
     };
   }, [roomId, updateState]);
 
-  return { gameState, isHost, connected, playerCount, dispatch };
+  return { gameState, isHost, connected, connectionError, playerCount, dispatch };
 }
