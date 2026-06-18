@@ -129,7 +129,8 @@ export function TurnSummary({ gameState, isHost, dispatch }: Props) {
             </Button>
             <button
               onClick={() => dispatch("end_game")}
-              className="w-full py-3 text-gray-500 hover:text-gray-300 transition-colors text-sm touch-manipulation"
+              className="w-full py-3 rounded-xl text-gray-400 text-sm font-semibold touch-manipulation active:text-white transition-colors"
+              style={{ border: "1px solid rgba(255,255,255,0.1)" }}
             >
               סיים משחק
             </button>

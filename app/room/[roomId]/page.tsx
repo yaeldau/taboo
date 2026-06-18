@@ -131,9 +131,21 @@ export default function RoomPage() {
         </div>
 
         {/* Action buttons pinned to bottom */}
-        <div className="px-4 pb-6 pt-2">
+        <div className="px-4 pt-2 pb-3">
           <ActionButtons dispatch={dispatch} isHost={isHost} />
         </div>
+
+        {/* End game — subtle, host only */}
+        {isHost && (
+          <div className="pb-6 text-center">
+            <button
+              onClick={() => dispatch("end_game")}
+              className="text-gray-600 text-sm py-1 px-4 touch-manipulation active:text-gray-400 transition-colors"
+            >
+              סיים משחק
+            </button>
+          </div>
+        )}
       </div>
     );
   }
