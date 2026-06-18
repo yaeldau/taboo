@@ -23,7 +23,8 @@ export interface GameState {
   teams: [Team, Team];
   activeTeam: 0 | 1;
   currentCard: Card | null;
-  usedCardIndices: number[];
+  /** Remaining cards for this game, shuffled at start */
+  cardQueue: Card[];
   turnResults: TurnResult[];
   /** Unix ms timestamp when the current turn started, for timer sync */
   turnStartedAt: number | null;
@@ -39,7 +40,7 @@ export const DEFAULT_GAME_STATE: GameState = {
   ],
   activeTeam: 0,
   currentCard: null,
-  usedCardIndices: [],
+  cardQueue: [],
   turnResults: [],
   turnStartedAt: null,
 };

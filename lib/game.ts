@@ -1,38 +1,52 @@
-import type { GameState, TurnOutcome, TurnResult } from "@/types/game";
+import type { GameState, TurnOutcome, TurnResult, Team } from "@/types/game";
 import { DEFAULT_GAME_STATE, TURN_DURATION_MS } from "@/types/game";
-import { getCardByIndex } from "@/lib/cards";
+import { getShuffledDeck } from "@/lib/cards";
 
-export function startTurn(state: GameState): GameState {
-  const nextIndex =
-    state.usedCardIndices.length > 0
-      ? Math.max(...state.usedCardIndices) + 1
-      : 0;
+function drawFromQueue(state: GameState): {
+  card: GameState["currentCard"];
+  queue: GameState["cardQueue"];
+} {
+  const queue = state.cardQueue.length > 0 ? state.cardQueue : getShuffledDeck();
+  const [card, ...rest] = queue;
+  return { card: card ?? null, queue: rest };
+}
 
+export function startGame(state: GameState): GameState {
+  const deck = getShuffledDeck();
+  const [card, ...rest] = deck;
   return {
     ...state,
     phase: "playing",
-    currentCard: getCardByIndex(nextIndex),
-    usedCardIndices: [...state.usedCardIndices, nextIndex],
+    currentCard: card,
+    cardQueue: rest,
+    turnResults: [],
+    turnStartedAt: Date.now(),
+    activeTeam: 0,
+  };
+}
+
+export function startTurn(state: GameState): GameState {
+  const { card, queue } = drawFromQueue(state);
+  return {
+    ...state,
+    phase: "playing",
+    currentCard: card,
+    cardQueue: queue,
     turnResults: [],
     turnStartedAt: Date.now(),
   };
 }
 
-export function recordResult(
-  state: GameState,
-  outcome: TurnOutcome
-): GameState {
+export function recordResult(state: GameState, outcome: TurnOutcome): GameState {
   if (!state.currentCard) return state;
 
   const result: TurnResult = { word: state.currentCard.word, outcome };
-
-  const nextIndex = Math.max(...state.usedCardIndices) + 1;
-  const nextCard = getCardByIndex(nextIndex);
+  const { card, queue } = drawFromQueue(state);
 
   return {
     ...state,
-    currentCard: nextCard,
-    usedCardIndices: [...state.usedCardIndices, nextIndex],
+    currentCard: card,
+    cardQueue: queue,
     turnResults: [...state.turnResults, result],
   };
 }
@@ -44,10 +58,7 @@ export function endTurn(state: GameState): GameState {
     return acc;
   }, 0);
 
-  const teams: GameState["teams"] = [
-    { ...state.teams[0] },
-    { ...state.teams[1] },
-  ];
+  const teams: [Team, Team] = [{ ...state.teams[0] }, { ...state.teams[1] }];
   teams[state.activeTeam].score += delta;
 
   return {
@@ -72,8 +83,8 @@ export function resetGame(state: GameState): GameState {
   return {
     ...DEFAULT_GAME_STATE,
     teams: [
-      { ...state.teams[0], score: 0 },
-      { ...state.teams[1], score: 0 },
+      { id: 0, name: state.teams[0].name, score: 0 },
+      { id: 1, name: state.teams[1].name, score: 0 },
     ],
   };
 }

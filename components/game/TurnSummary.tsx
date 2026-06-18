@@ -1,0 +1,136 @@
+import type { GameState, TurnResult } from "@/types/game";
+import type { GameAction } from "@/hooks/useGameRoom";
+import { Button } from "@/components/ui/button";
+
+interface Props {
+  gameState: GameState;
+  isHost: boolean;
+  dispatch: (action: GameAction) => void;
+}
+
+function OutcomeIcon({ outcome }: { outcome: TurnResult["outcome"] }) {
+  if (outcome === "correct")
+    return <span className="text-green-400 font-black">✓</span>;
+  if (outcome === "taboo")
+    return <span className="font-black" style={{ color: "#ef4444" }}>✕</span>;
+  return <span className="text-gray-500 font-black">⟩⟩</span>;
+}
+
+export function TurnSummary({ gameState, isHost, dispatch }: Props) {
+  const { turnResults, teams, activeTeam } = gameState;
+
+  const delta = turnResults.reduce((acc, r) => {
+    if (r.outcome === "correct") return acc + 1;
+    if (r.outcome === "taboo") return acc - 1;
+    return acc;
+  }, 0);
+
+  const correct = turnResults.filter((r) => r.outcome === "correct").length;
+  const taboos = turnResults.filter((r) => r.outcome === "taboo").length;
+  const skips = turnResults.filter((r) => r.outcome === "skip").length;
+
+  const deltaColor =
+    delta > 0 ? "#4ade80" : delta < 0 ? "#f87171" : "#9ca3af";
+  const deltaLabel = delta > 0 ? `+${delta}` : String(delta);
+
+  return (
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 px-5 pt-10 pb-8 gap-5">
+      {/* Header */}
+      <div className="text-center space-y-1">
+        <div className="text-5xl">⏱️</div>
+        <h2 className="text-3xl font-black text-white">הסיבוב נגמר!</h2>
+        <p className="text-gray-400">תור {teams[activeTeam].name}</p>
+      </div>
+
+      {/* Delta */}
+      <div
+        className="text-center py-5 rounded-2xl"
+        style={{
+          background:
+            delta > 0
+              ? "rgba(22,163,74,0.15)"
+              : delta < 0
+              ? "rgba(220,38,38,0.15)"
+              : "rgba(255,255,255,0.05)",
+          border: `1px solid ${delta > 0 ? "rgba(74,222,128,0.3)" : delta < 0 ? "rgba(248,113,113,0.3)" : "transparent"}`,
+        }}
+      >
+        <span
+          className="text-6xl font-black"
+          style={{ color: deltaColor }}
+        >
+          {deltaLabel}
+        </span>
+        <p className="text-gray-400 text-sm mt-2">
+          {correct} נכון · {taboos} טאבו · {skips} דילוג
+        </p>
+      </div>
+
+      {/* Results list */}
+      {turnResults.length > 0 && (
+        <div className="flex-1 space-y-2 overflow-y-auto">
+          {turnResults.map((r, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between px-4 py-3 rounded-xl"
+              style={{ background: "rgba(255,255,255,0.05)" }}
+            >
+              <span className="text-white font-semibold text-lg">{r.word}</span>
+              <OutcomeIcon outcome={r.outcome} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Scores */}
+      <div className="grid grid-cols-2 gap-3">
+        {([0, 1] as const).map((i) => (
+          <div
+            key={i}
+            className="text-center py-3 rounded-xl"
+            style={
+              i === activeTeam
+                ? {
+                    background: "rgba(230,57,70,0.15)",
+                    border: "1px solid rgba(230,57,70,0.3)",
+                  }
+                : { background: "rgba(255,255,255,0.04)" }
+            }
+          >
+            <div className="text-xs text-gray-400 mb-1">{teams[i].name}</div>
+            <div className="text-3xl font-black text-white">{teams[i].score}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Actions */}
+      <div className="space-y-3">
+        {isHost ? (
+          <>
+            <Button
+              size="lg"
+              onClick={() => dispatch("next_turn")}
+              className="w-full h-14 text-lg font-black rounded-2xl text-white border-0 touch-manipulation"
+              style={{
+                background: "linear-gradient(135deg, #e63946, #c1121f)",
+                boxShadow: "0 6px 24px rgba(230,57,70,0.4)",
+              }}
+            >
+              סיבוב הבא ←
+            </Button>
+            <button
+              onClick={() => dispatch("end_game")}
+              className="w-full py-3 text-gray-500 hover:text-gray-300 transition-colors text-sm touch-manipulation"
+            >
+              סיים משחק
+            </button>
+          </>
+        ) : (
+          <div className="text-center text-gray-500 animate-pulse py-3">
+            ממתין למארח...
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
