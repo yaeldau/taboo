@@ -131,18 +131,20 @@ export function useGameRoom(roomId: string) {
           setTimeout(sendState, 300);
           setTimeout(sendState, 1500);
         }
-      })
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          setConnected(true);
-          await channel.track({ joined_at: Date.now() });
-        } else if (status === "TIMED_OUT" || status === "CHANNEL_ERROR") {
-          setConnectionError(true);
-        }
       });
 
     // Fail visibly after 8 seconds rather than spinning forever
     const timeout = setTimeout(() => setConnectionError(true), 8000);
+
+    channel.subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        clearTimeout(timeout); // cancel the error timer — we connected
+        setConnected(true);
+        await channel.track({ joined_at: Date.now() });
+      } else if (status === "TIMED_OUT" || status === "CHANNEL_ERROR") {
+        setConnectionError(true);
+      }
+    });
 
     return () => {
       clearTimeout(timeout);
