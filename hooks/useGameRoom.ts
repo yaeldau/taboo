@@ -117,15 +117,18 @@ export function useGameRoom(roomId: string) {
         setPlayerCount(Object.keys(channel.presenceState()).length);
       })
       .on("presence", { event: "join" }, () => {
-        // Re-broadcast current state so late joiners receive it
+        // Re-broadcast current state so late joiners receive it.
+        // Send twice (300ms and 1500ms) because mobile clients may not be
+        // fully subscribed to broadcast events when the join event fires.
         if (isHostRef.current) {
-          setTimeout(() => {
+          const sendState = () =>
             channelRef.current?.send({
               type: "broadcast",
               event: "state_update",
               payload: { state: stateRef.current },
             });
-          }, 300);
+          setTimeout(sendState, 300);
+          setTimeout(sendState, 1500);
         }
       })
       .subscribe(async (status) => {

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { GameState, TurnResult } from "@/types/game";
 import type { GameAction } from "@/hooks/useGameRoom";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,14 @@ function OutcomeIcon({ outcome }: { outcome: TurnResult["outcome"] }) {
 }
 
 export function TurnSummary({ gameState, isHost, dispatch }: Props) {
+  const [advancing, setAdvancing] = useState(false);
   const { turnResults, teams, activeTeam } = gameState;
+
+  function handleNextTurn() {
+    if (advancing) return;
+    setAdvancing(true);
+    dispatch("next_turn");
+  }
 
   const delta = turnResults.reduce((acc, r) => {
     if (r.outcome === "correct") return acc + 1;
@@ -109,14 +117,15 @@ export function TurnSummary({ gameState, isHost, dispatch }: Props) {
           <>
             <Button
               size="lg"
-              onClick={() => dispatch("next_turn")}
-              className="w-full h-14 text-lg font-black rounded-2xl text-white border-0 touch-manipulation"
+              disabled={advancing}
+              onClick={handleNextTurn}
+              className="w-full h-14 text-lg font-black rounded-2xl text-white border-0 touch-manipulation disabled:opacity-50"
               style={{
                 background: "linear-gradient(135deg, #e63946, #c1121f)",
                 boxShadow: "0 6px 24px rgba(230,57,70,0.4)",
               }}
             >
-              סיבוב הבא ←
+              {advancing ? "..." : "סיבוב הבא ←"}
             </Button>
             <button
               onClick={() => dispatch("end_game")}
