@@ -123,10 +123,24 @@ export default function RoomPage() {
           </div>
         </div>
 
-        {/* Card — takes all remaining space */}
+        {/* Card — only the host (clue giver) sees the word */}
         <div className="flex-1 flex items-center justify-center px-4 py-2 overflow-hidden">
-          {gameState.currentCard && (
-            <TabooCard card={gameState.currentCard} />
+          {isHost ? (
+            gameState.currentCard && <TabooCard card={gameState.currentCard} />
+          ) : (
+            <div
+              className="w-full max-w-sm rounded-3xl flex flex-col items-center justify-center gap-4 py-16"
+              style={{
+                background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+                border: "2px solid rgba(255,255,255,0.08)",
+              }}
+            >
+              <div className="text-6xl">🤔</div>
+              <p className="text-white text-2xl font-black">נחשו!</p>
+              <p className="text-gray-500 text-sm text-center px-6">
+                המארח מתאר — נסו לנחש את המילה
+              </p>
+            </div>
           )}
         </div>
 
