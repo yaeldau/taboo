@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import type { GameAction } from "@/hooks/useGameRoom";
+import { playSound } from "@/lib/sounds";
 
 interface Props {
   dispatch: (action: GameAction) => void;
@@ -30,6 +31,7 @@ export function ActionButtons({ dispatch, isHost }: Props) {
     if (now - lastFiredAt.current < 300) return; // debounce: one action per 300ms
     lastFiredAt.current = now;
     vibrate(vibratePattern);
+    playSound(action);
     dispatch(action);
   }
 

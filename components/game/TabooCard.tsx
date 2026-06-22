@@ -15,7 +15,7 @@ export function TabooCard({ card }: Props) {
       }}
     >
       {/* Card header */}
-      <div className="px-6 pt-5 pb-2 flex items-center justify-between">
+      <div className="px-5 pt-3 pb-1 sm:px-6 sm:pt-5 sm:pb-2 flex items-center justify-between">
         <span
           className="text-xs font-black tracking-[0.25em] uppercase"
           style={{ color: "rgba(255,255,255,0.5)" }}
@@ -31,10 +31,10 @@ export function TabooCard({ card }: Props) {
       </div>
 
       {/* Main word */}
-      <div className="px-6 pb-5 text-center">
+      <div className="px-5 pb-3 sm:px-6 sm:pb-5 text-center">
         <h2
           className="font-black text-white leading-none"
-          style={{ fontSize: "clamp(2.5rem, 10vw, 4rem)" }}
+          style={{ fontSize: "clamp(2rem, 9vw, 4rem)" }}
         >
           {card.word}
         </h2>
@@ -42,25 +42,25 @@ export function TabooCard({ card }: Props) {
 
       {/* Divider */}
       <div
-        className="mx-5 mb-4 h-px"
+        className="mx-5 mb-2 sm:mb-4 h-px"
         style={{ background: "rgba(0,0,0,0.3)" }}
       />
 
       {/* Forbidden words */}
-      <div className="px-5 pb-6 space-y-2">
+      <div className="px-4 pb-4 space-y-1 sm:px-5 sm:pb-6 sm:space-y-2">
         {card.forbidden.map((word, i) => (
           <div
             key={i}
-            className="flex items-center gap-3 py-2 px-4 rounded-xl"
+            className="flex items-center gap-2 py-1 px-3 sm:py-2 sm:px-4 rounded-xl"
             style={{ background: "rgba(0,0,0,0.25)" }}
           >
             <span
-              className="text-xs font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+              className="text-xs font-black w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ background: "rgba(0,0,0,0.3)", color: "rgba(255,255,255,0.5)" }}
             >
               ✕
             </span>
-            <span className="text-white/90 text-lg font-bold">{word}</span>
+            <span className="text-white/90 text-base sm:text-lg font-bold">{word}</span>
           </div>
         ))}
       </div>

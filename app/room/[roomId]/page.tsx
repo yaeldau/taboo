@@ -3,17 +3,20 @@
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useGameRoom } from "@/hooks/useGameRoom";
+import { useSound } from "@/hooks/useSound";
 import { Lobby } from "@/components/game/Lobby";
 import { TabooCard } from "@/components/game/TabooCard";
 import { Timer } from "@/components/game/Timer";
 import { ActionButtons } from "@/components/game/ActionButtons";
 import { TurnSummary } from "@/components/game/TurnSummary";
 import { GameEnded } from "@/components/game/GameEnded";
+import { Volume2, VolumeX } from "lucide-react";
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
   const { gameState, isHost, connected, connectionError, connectionErrorReason, playerCount, dispatch } =
     useGameRoom(roomId);
+  const { muted, toggleMute } = useSound();
 
   // Keep screen awake during gameplay
   useEffect(() => {
@@ -82,10 +85,10 @@ export default function RoomPage() {
   if (gameState.phase === "playing") {
     const { teams, activeTeam } = gameState;
     return (
-      <div className="flex flex-col h-screen bg-gray-950">
-        {/* Top bar: Team scores flanking the timer */}
-        <div className="flex items-center gap-3 px-5 pt-4 pb-2">
-          {/* Team 0 — right side in RTL (naturally first) */}
+      <div className="flex flex-col h-dvh bg-gray-950">
+        {/* Top bar: Team scores flanking the timer, with mute toggle */}
+        <div className="flex items-center gap-2 px-4 pt-2 pb-1 sm:gap-3 sm:px-5 sm:pt-4 sm:pb-2">
+          {/* Team 0 — right side in RTL */}
           <div
             className={`flex-1 text-center transition-all duration-300 ${
               activeTeam === 0 ? "opacity-100" : "opacity-35"
@@ -94,9 +97,7 @@ export default function RoomPage() {
             <div className="text-xs text-gray-400 truncate">
               {teams[0].name}
             </div>
-            <div
-              className="text-3xl font-black text-white leading-none mt-0.5"
-            >
+            <div className="text-2xl sm:text-3xl font-black text-white leading-none mt-0.5">
               {teams[0].score}
             </div>
             {activeTeam === 0 && (
@@ -107,9 +108,24 @@ export default function RoomPage() {
             )}
           </div>
 
-          <Timer gameState={gameState} />
+          {/* Timer + mute button stacked */}
+          <div className="flex flex-col items-center gap-1 flex-shrink-0">
+            <Timer gameState={gameState} />
+            <button
+              onClick={toggleMute}
+              className="flex items-center justify-center w-7 h-7 rounded-full touch-manipulation transition-colors active:scale-90"
+              style={{ background: "rgba(255,255,255,0.07)" }}
+              aria-label={muted ? "הפעל צלילים" : "השתק צלילים"}
+            >
+              {muted ? (
+                <VolumeX className="w-4 h-4 text-gray-500" />
+              ) : (
+                <Volume2 className="w-4 h-4 text-gray-400" />
+              )}
+            </button>
+          </div>
 
-          {/* Team 1 — left side in RTL (naturally last) */}
+          {/* Team 1 — left side in RTL */}
           <div
             className={`flex-1 text-center transition-all duration-300 ${
               activeTeam === 1 ? "opacity-100" : "opacity-35"
@@ -118,7 +134,7 @@ export default function RoomPage() {
             <div className="text-xs text-gray-400 truncate">
               {teams[1].name}
             </div>
-            <div className="text-3xl font-black text-white leading-none mt-0.5">
+            <div className="text-2xl sm:text-3xl font-black text-white leading-none mt-0.5">
               {teams[1].score}
             </div>
             {activeTeam === 1 && (
@@ -131,7 +147,7 @@ export default function RoomPage() {
         </div>
 
         {/* Card — only the host (clue giver) sees the word */}
-        <div className="flex-1 flex flex-col items-center justify-center px-4 py-2 gap-2 overflow-hidden">
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-1 gap-1 overflow-hidden">
           {isHost ? (
             gameState.currentCard && (
               <>
@@ -159,13 +175,13 @@ export default function RoomPage() {
         </div>
 
         {/* Action buttons pinned to bottom */}
-        <div className="px-4 pt-2 pb-3">
+        <div className="px-4 pt-1 pb-2">
           <ActionButtons dispatch={dispatch} isHost={isHost} />
         </div>
 
         {/* End game — subtle, host only */}
         {isHost && (
-          <div className="pb-6 text-center">
+          <div className="pb-3 text-center">
             <button
               onClick={() => dispatch("end_game")}
               className="text-gray-600 text-sm py-1 px-4 touch-manipulation active:text-gray-400 transition-colors"
