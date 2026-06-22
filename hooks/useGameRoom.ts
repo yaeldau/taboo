@@ -29,6 +29,7 @@ export function useGameRoom(roomId: string) {
   const [isHost, setIsHost] = useState(false);
   const [connected, setConnected] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
+  const [connectionErrorReason, setConnectionErrorReason] = useState<string>("");
   const [playerCount, setPlayerCount] = useState(0);
 
   const stateRef = useRef<GameState>(DEFAULT_GAME_STATE);
@@ -107,6 +108,17 @@ export function useGameRoom(roomId: string) {
   }, [gameState.phase, gameState.turnStartedAt, isHost]);
 
   useEffect(() => {
+    // Detect missing env vars before attempting to connect
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) {
+      setConnectionErrorReason(
+        `חסרים משתני סביבה: ${!url ? "NEXT_PUBLIC_SUPABASE_URL " : ""}${!key ? "NEXT_PUBLIC_SUPABASE_ANON_KEY" : ""}`.trim()
+      );
+      setConnectionError(true);
+      return;
+    }
+
     const host = localStorage.getItem(`isHost_${roomId}`) === "true";
     setIsHost(host);
     isHostRef.current = host;
@@ -141,14 +153,27 @@ export function useGameRoom(roomId: string) {
       });
 
     // Fail visibly after 8 seconds rather than spinning forever
-    const timeout = setTimeout(() => setConnectionError(true), 8000);
+    const timeout = setTimeout(() => {
+      setConnectionErrorReason("פסק זמן — הפרויקט ב-Supabase אולי מושהה או ה-URL שגוי");
+      setConnectionError(true);
+    }, 8000);
 
-    channel.subscribe(async (status) => {
+    channel.subscribe(async (status, err) => {
       if (status === "SUBSCRIBED") {
-        clearTimeout(timeout); // cancel the error timer — we connected
+        clearTimeout(timeout);
         setConnected(true);
         await channel.track({ joined_at: Date.now() });
-      } else if (status === "TIMED_OUT" || status === "CHANNEL_ERROR") {
+      } else if (status === "TIMED_OUT") {
+        clearTimeout(timeout);
+        setConnectionErrorReason("פסק זמן (TIMED_OUT) — בדוק שהפרויקט ב-Supabase פעיל");
+        setConnectionError(true);
+      } else if (status === "CHANNEL_ERROR") {
+        clearTimeout(timeout);
+        setConnectionErrorReason(
+          err?.message
+            ? `שגיאת ערוץ: ${err.message}`
+            : "שגיאת ערוץ (CHANNEL_ERROR) — בדוק הרשאות Realtime ב-Supabase"
+        );
         setConnectionError(true);
       }
     });
@@ -159,5 +184,5 @@ export function useGameRoom(roomId: string) {
     };
   }, [roomId, updateState]);
 
-  return { gameState, isHost, connected, connectionError, playerCount, dispatch };
+  return { gameState, isHost, connected, connectionError, connectionErrorReason, playerCount, dispatch };
 }
