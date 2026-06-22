@@ -166,18 +166,10 @@ export function useGameRoom(roomId: string) {
         setConnectionError(false);
         setConnectionErrorReason("");
         await channel.track({ joined_at: Date.now() });
-      } else if (status === "TIMED_OUT") {
-        clearTimeout(timeout);
-        setConnectionErrorReason("פסק זמן (TIMED_OUT) — בדוק שהפרויקט ב-Supabase פעיל");
-        setConnectionError(true);
-      } else if (status === "CHANNEL_ERROR") {
-        clearTimeout(timeout);
-        setConnectionErrorReason(
-          err?.message
-            ? `שגיאת ערוץ: ${err.message}`
-            : "שגיאת ערוץ (CHANNEL_ERROR) — בדוק הרשאות Realtime ב-Supabase"
-        );
-        setConnectionError(true);
+      } else if (status === "TIMED_OUT" || status === "CHANNEL_ERROR") {
+        // Let the Supabase client auto-reconnect silently; only the
+        // 15-second timeout above gives up and shows the error screen.
+        console.log("Supabase will auto-reconnect:", status, err?.message ?? "");
       }
     });
 
