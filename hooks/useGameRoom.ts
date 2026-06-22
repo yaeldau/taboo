@@ -159,6 +159,7 @@ export function useGameRoom(roomId: string) {
     }, 8000);
 
     channel.subscribe(async (status, err) => {
+      console.log("Supabase channel status:", status, err?.message ?? "");
       if (status === "SUBSCRIBED") {
         clearTimeout(timeout);
         setConnected(true);
