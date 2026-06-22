@@ -10,6 +10,7 @@ import {
   isTurnExpired,
   timeRemainingMs,
   redactStateForBroadcast,
+  computeTurnStats,
 } from "@/lib/game";
 import { DEFAULT_GAME_STATE, TURN_DURATION_MS } from "@/types/game";
 import type { GameState } from "@/types/game";
@@ -464,5 +465,58 @@ describe("redactStateForBroadcast", () => {
   it("handles empty queue gracefully", () => {
     const s = makeState({ cardQueue: [] });
     expect(redactStateForBroadcast(s).cardQueue).toHaveLength(0);
+  });
+});
+
+// ─── computeTurnStats ────────────────────────────────────────────────────────
+
+describe("computeTurnStats", () => {
+  it("returns all zeros for an empty results array", () => {
+    expect(computeTurnStats([])).toEqual({ correct: 0, skip: 0, taboo: 0, net: 0 });
+  });
+
+  it("counts correct results", () => {
+    const results = [
+      { word: "א", outcome: "correct" as const },
+      { word: "ב", outcome: "correct" as const },
+    ];
+    expect(computeTurnStats(results).correct).toBe(2);
+  });
+
+  it("counts skip results", () => {
+    const results = [{ word: "א", outcome: "skip" as const }];
+    expect(computeTurnStats(results).skip).toBe(1);
+  });
+
+  it("counts taboo results", () => {
+    const results = [{ word: "א", outcome: "taboo" as const }];
+    expect(computeTurnStats(results).taboo).toBe(1);
+  });
+
+  it("computes net as correct minus taboo", () => {
+    const results = [
+      { word: "א", outcome: "correct" as const },
+      { word: "ב", outcome: "correct" as const },
+      { word: "ג", outcome: "taboo" as const },
+      { word: "ד", outcome: "skip" as const },
+    ];
+    expect(computeTurnStats(results).net).toBe(1); // 2 - 1
+  });
+
+  it("net can be negative", () => {
+    const results = [
+      { word: "א", outcome: "taboo" as const },
+      { word: "ב", outcome: "taboo" as const },
+    ];
+    expect(computeTurnStats(results).net).toBe(-2);
+  });
+
+  it("skip does not affect net", () => {
+    const results = [
+      { word: "א", outcome: "skip" as const },
+      { word: "ב", outcome: "skip" as const },
+      { word: "ג", outcome: "skip" as const },
+    ];
+    expect(computeTurnStats(results).net).toBe(0);
   });
 });

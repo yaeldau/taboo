@@ -10,6 +10,7 @@ import { Timer } from "@/components/game/Timer";
 import { ActionButtons } from "@/components/game/ActionButtons";
 import { TurnSummary } from "@/components/game/TurnSummary";
 import { GameEnded } from "@/components/game/GameEnded";
+import { TurnScoreCounter } from "@/components/game/TurnScoreCounter";
 import { Volume2, VolumeX } from "lucide-react";
 
 export default function RoomPage() {
@@ -174,8 +175,11 @@ export default function RoomPage() {
           )}
         </div>
 
+        {/* Running turn score — visible to all players */}
+        <TurnScoreCounter results={gameState.turnResults} />
+
         {/* Action buttons pinned to bottom */}
-        <div className="px-4 pt-1 pb-2">
+        <div className="px-4 pt-0 pb-2">
           <ActionButtons dispatch={dispatch} isHost={isHost} />
         </div>
 

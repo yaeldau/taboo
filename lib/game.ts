@@ -112,3 +112,17 @@ export function timeRemainingMs(state: GameState): number {
 export function redactStateForBroadcast(state: GameState): GameState {
   return { ...state, currentCard: null, cardQueue: [] };
 }
+
+export interface TurnStats {
+  correct: number;
+  skip: number;
+  taboo: number;
+  net: number;
+}
+
+export function computeTurnStats(results: TurnResult[]): TurnStats {
+  const correct = results.filter((r) => r.outcome === "correct").length;
+  const skip = results.filter((r) => r.outcome === "skip").length;
+  const taboo = results.filter((r) => r.outcome === "taboo").length;
+  return { correct, skip, taboo, net: correct - taboo };
+}
