@@ -12,16 +12,15 @@ function drawFromQueue(state: GameState): {
 }
 
 export function startGame(state: GameState): GameState {
-  const deck = getShuffledDeck();
-  const [card, ...rest] = deck;
+  const base: GameState = { ...state, cardQueue: [], activeTeam: 0, currentRound: 1 };
+  const { card, queue } = drawFromQueue(base);
   return {
-    ...state,
+    ...base,
     phase: "playing",
     currentCard: card,
-    cardQueue: rest,
+    cardQueue: queue,
     turnResults: [],
     turnStartedAt: Date.now(),
-    activeTeam: 0,
   };
 }
 
@@ -72,7 +71,15 @@ export function endTurn(state: GameState): GameState {
 
 export function nextTurn(state: GameState): GameState {
   const nextTeam: 0 | 1 = state.activeTeam === 0 ? 1 : 0;
-  return startTurn({ ...state, activeTeam: nextTeam });
+  // Completing a round = team 1 finishes (we're switching back to team 0)
+  const completingRound = state.activeTeam === 1;
+  const nextRound = completingRound ? state.currentRound + 1 : state.currentRound;
+
+  if (completingRound && nextRound > state.totalRounds) {
+    return endGame(state);
+  }
+
+  return startTurn({ ...state, activeTeam: nextTeam, currentRound: nextRound });
 }
 
 export function endGame(state: GameState): GameState {
@@ -82,6 +89,8 @@ export function endGame(state: GameState): GameState {
 export function resetGame(state: GameState): GameState {
   return {
     ...DEFAULT_GAME_STATE,
+    totalRounds: state.totalRounds,
+    turnDurationMs: state.turnDurationMs,
     teams: [
       { id: 0, name: state.teams[0].name, score: 0 },
       { id: 1, name: state.teams[1].name, score: 0 },
@@ -91,10 +100,15 @@ export function resetGame(state: GameState): GameState {
 
 export function isTurnExpired(state: GameState): boolean {
   if (!state.turnStartedAt) return false;
-  return Date.now() - state.turnStartedAt >= TURN_DURATION_MS;
+  return Date.now() - state.turnStartedAt >= state.turnDurationMs;
 }
 
 export function timeRemainingMs(state: GameState): number {
-  if (!state.turnStartedAt) return TURN_DURATION_MS;
-  return Math.max(0, TURN_DURATION_MS - (Date.now() - state.turnStartedAt));
+  if (!state.turnStartedAt) return state.turnDurationMs;
+  return Math.max(0, state.turnDurationMs - (Date.now() - state.turnStartedAt));
+}
+
+/** Returns a copy of state safe to broadcast to non-host clients (card data stripped). */
+export function redactStateForBroadcast(state: GameState): GameState {
+  return { ...state, currentCard: null, cardQueue: [] };
 }

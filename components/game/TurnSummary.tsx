@@ -19,7 +19,8 @@ function OutcomeIcon({ outcome }: { outcome: TurnResult["outcome"] }) {
 
 export function TurnSummary({ gameState, isHost, dispatch }: Props) {
   const [advancing, setAdvancing] = useState(false);
-  const { turnResults, teams, activeTeam } = gameState;
+  const { turnResults, teams, activeTeam, currentRound, totalRounds } = gameState;
+  const isLastTurn = activeTeam === 1 && currentRound === totalRounds;
 
   function handleNextTurn() {
     if (advancing) return;
@@ -48,6 +49,9 @@ export function TurnSummary({ gameState, isHost, dispatch }: Props) {
         <div className="text-5xl">⏱️</div>
         <h2 className="text-3xl font-black text-white">הסיבוב נגמר!</h2>
         <p className="text-gray-400">תור {teams[activeTeam].name}</p>
+        <p className="text-gray-600 text-sm">
+          סיבוב {currentRound} מתוך {totalRounds}
+        </p>
       </div>
 
       {/* Delta */}
@@ -125,7 +129,7 @@ export function TurnSummary({ gameState, isHost, dispatch }: Props) {
                 boxShadow: "0 6px 24px rgba(230,57,70,0.4)",
               }}
             >
-              {advancing ? "..." : "סיבוב הבא ←"}
+              {advancing ? "..." : isLastTurn ? "סיום משחק ←" : "סיבוב הבא ←"}
             </Button>
             <button
               onClick={() => dispatch("end_game")}

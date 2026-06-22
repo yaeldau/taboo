@@ -12,6 +12,7 @@ import {
   endGame,
   resetGame,
   timeRemainingMs,
+  redactStateForBroadcast,
 } from "@/lib/game";
 
 export type GameAction =
@@ -21,7 +22,7 @@ export type GameAction =
   | "next_turn"
   | "end_game"
   | "reset"
-  | { type: "start_game"; teamNames?: [string, string] };
+  | { type: "start_game"; teamNames?: [string, string]; totalRounds?: number; turnDurationMs?: number };
 
 export function useGameRoom(roomId: string) {
   const [gameState, setGameState] = useState<GameState>(DEFAULT_GAME_STATE);
@@ -45,7 +46,7 @@ export function useGameRoom(roomId: string) {
       channelRef.current?.send({
         type: "broadcast",
         event: "state_update",
-        payload: { state },
+        payload: { state: redactStateForBroadcast(state) },
       });
     },
     [updateState]
@@ -69,12 +70,18 @@ export function useGameRoom(roomId: string) {
         let base = s;
         if (action.teamNames) {
           base = {
-            ...s,
+            ...base,
             teams: [
-              { ...s.teams[0], name: action.teamNames[0] },
-              { ...s.teams[1], name: action.teamNames[1] },
+              { ...base.teams[0], name: action.teamNames[0] },
+              { ...base.teams[1], name: action.teamNames[1] },
             ] as [Team, Team],
           };
+        }
+        if (action.totalRounds !== undefined) {
+          base = { ...base, totalRounds: action.totalRounds };
+        }
+        if (action.turnDurationMs !== undefined) {
+          base = { ...base, turnDurationMs: action.turnDurationMs };
         }
         broadcast(startGame(base));
       }
@@ -100,7 +107,7 @@ export function useGameRoom(roomId: string) {
   }, [gameState.phase, gameState.turnStartedAt, isHost]);
 
   useEffect(() => {
-    const host = sessionStorage.getItem(`isHost_${roomId}`) === "true";
+    const host = localStorage.getItem(`isHost_${roomId}`) === "true";
     setIsHost(host);
     isHostRef.current = host;
 
@@ -126,7 +133,7 @@ export function useGameRoom(roomId: string) {
             channelRef.current?.send({
               type: "broadcast",
               event: "state_update",
-              payload: { state: stateRef.current },
+              payload: { state: redactStateForBroadcast(stateRef.current) },
             });
           setTimeout(sendState, 300);
           setTimeout(sendState, 1500);

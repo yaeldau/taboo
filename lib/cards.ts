@@ -12,9 +12,6 @@ export function getShuffledDeck(): Card[] {
   return deck;
 }
 
-export function getCardByIndex(index: number): Card {
-  return cards[index % cards.length];
-}
 
 export function totalCards(): number {
   return cards.length;

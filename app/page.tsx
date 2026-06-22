@@ -9,7 +9,7 @@ export default function LandingPage() {
 
   function handleCreateRoom() {
     const roomId = createRoomId();
-    sessionStorage.setItem(`isHost_${roomId}`, "true");
+    localStorage.setItem(`isHost_${roomId}`, "true");
     router.push(`/room/${roomId}`);
   }
 

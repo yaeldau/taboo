@@ -124,9 +124,16 @@ export default function RoomPage() {
         </div>
 
         {/* Card — only the host (clue giver) sees the word */}
-        <div className="flex-1 flex items-center justify-center px-4 py-2 overflow-hidden">
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-2 gap-2 overflow-hidden">
           {isHost ? (
-            gameState.currentCard && <TabooCard card={gameState.currentCard} />
+            gameState.currentCard && (
+              <>
+                <p className="text-gray-600 text-xs tabular-nums">
+                  כרטיס {gameState.turnResults.length + 1}
+                </p>
+                <TabooCard card={gameState.currentCard} />
+              </>
+            )
           ) : (
             <div
               className="w-full max-w-sm rounded-3xl flex flex-col items-center justify-center gap-4 py-16"

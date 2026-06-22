@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { timeRemainingMs } from "@/lib/game";
-import { TURN_DURATION_MS } from "@/types/game";
 import type { GameState } from "@/types/game";
 
 interface Props {
@@ -20,7 +19,7 @@ export function Timer({ gameState }: Props) {
   }, [gameState]);
 
   const seconds = Math.ceil(remaining / 1000);
-  const progress = remaining / TURN_DURATION_MS;
+  const progress = remaining / gameState.turnDurationMs;
 
   const SIZE = 76;
   const STROKE = 6;

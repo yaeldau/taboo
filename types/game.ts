@@ -28,6 +28,12 @@ export interface GameState {
   turnResults: TurnResult[];
   /** Unix ms timestamp when the current turn started, for timer sync */
   turnStartedAt: number | null;
+  /** How many full rounds (each team plays once) the game runs */
+  totalRounds: number;
+  /** Which round we're currently in (1-indexed) */
+  currentRound: number;
+  /** Turn duration in milliseconds */
+  turnDurationMs: number;
 }
 
 export const TURN_DURATION_MS = 60_000;
@@ -43,6 +49,9 @@ export const DEFAULT_GAME_STATE: GameState = {
   cardQueue: [],
   turnResults: [],
   turnStartedAt: null,
+  totalRounds: 3,
+  currentRound: 1,
+  turnDurationMs: TURN_DURATION_MS,
 };
 
 /** Message broadcast over the Supabase Realtime channel */

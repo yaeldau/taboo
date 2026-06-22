@@ -19,7 +19,12 @@ export function Lobby({ gameState, isHost, playerCount, roomId, dispatch }: Prop
     gameState.teams[0].name,
     gameState.teams[1].name,
   ]);
+  const [totalRounds, setTotalRounds] = useState(gameState.totalRounds);
+  const [turnDurationMs, setTurnDurationMs] = useState(gameState.turnDurationMs);
   const [copied, setCopied] = useState(false);
+
+  const DURATION_OPTIONS = [30_000, 45_000, 60_000, 90_000] as const;
+  const durationLabel = (ms: number) => `${ms / 1000}″`;
 
   function handleShare() {
     navigator.clipboard.writeText(window.location.href);
@@ -28,7 +33,11 @@ export function Lobby({ gameState, isHost, playerCount, roomId, dispatch }: Prop
   }
 
   function handleStart() {
-    dispatch({ type: "start_game", teamNames });
+    dispatch({ type: "start_game", teamNames, totalRounds, turnDurationMs });
+  }
+
+  function adjustRounds(delta: number) {
+    setTotalRounds((r) => Math.min(10, Math.max(1, r + delta)));
   }
 
   function updateTeamName(index: 0 | 1, value: string) {
@@ -130,6 +139,79 @@ export function Lobby({ gameState, isHost, playerCount, roomId, dispatch }: Prop
             )
           )}
         </div>
+      </div>
+
+      {/* Rounds picker */}
+      <div className="w-full max-w-xs space-y-2">
+        <p className="text-gray-500 text-sm text-center uppercase tracking-widest">
+          מספר סיבובים
+        </p>
+        <div className="flex items-center justify-center gap-5">
+          {isHost ? (
+            <>
+              <button
+                onClick={() => adjustRounds(-1)}
+                disabled={totalRounds <= 1}
+                className="w-10 h-10 rounded-full text-2xl font-black text-white flex items-center justify-center transition-all active:scale-95 disabled:opacity-30"
+                style={{ background: "rgba(255,255,255,0.1)" }}
+              >
+                −
+              </button>
+              <span className="text-4xl font-black text-white w-10 text-center">
+                {totalRounds}
+              </span>
+              <button
+                onClick={() => adjustRounds(1)}
+                disabled={totalRounds >= 10}
+                className="w-10 h-10 rounded-full text-2xl font-black text-white flex items-center justify-center transition-all active:scale-95 disabled:opacity-30"
+                style={{ background: "rgba(255,255,255,0.1)" }}
+              >
+                +
+              </button>
+            </>
+          ) : (
+            <span className="text-4xl font-black text-white">
+              {gameState.totalRounds}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Turn duration picker */}
+      <div className="w-full max-w-xs space-y-2">
+        <p className="text-gray-500 text-sm text-center uppercase tracking-widest">
+          זמן לתור
+        </p>
+        {isHost ? (
+          <div className="grid grid-cols-4 gap-2">
+            {DURATION_OPTIONS.map((ms) => (
+              <button
+                key={ms}
+                onClick={() => setTurnDurationMs(ms)}
+                className="py-2.5 rounded-xl text-base font-black transition-all active:scale-95"
+                style={
+                  turnDurationMs === ms
+                    ? {
+                        background: "rgba(230,57,70,0.3)",
+                        border: "1px solid rgba(230,57,70,0.6)",
+                        color: "#fff",
+                      }
+                    : {
+                        background: "rgba(255,255,255,0.06)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        color: "#9ca3af",
+                      }
+                }
+              >
+                {durationLabel(ms)}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-2xl font-black text-white">
+            {durationLabel(gameState.turnDurationMs)}
+          </p>
+        )}
       </div>
 
       {/* Start / waiting */}
