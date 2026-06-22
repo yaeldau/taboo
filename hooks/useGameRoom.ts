@@ -156,13 +156,15 @@ export function useGameRoom(roomId: string) {
     const timeout = setTimeout(() => {
       setConnectionErrorReason("פסק זמן — הפרויקט ב-Supabase אולי מושהה או ה-URL שגוי");
       setConnectionError(true);
-    }, 8000);
+    }, 15000);
 
     channel.subscribe(async (status, err) => {
       console.log("Supabase channel status:", status, err?.message ?? "");
       if (status === "SUBSCRIBED") {
         clearTimeout(timeout);
         setConnected(true);
+        setConnectionError(false);
+        setConnectionErrorReason("");
         await channel.track({ joined_at: Date.now() });
       } else if (status === "TIMED_OUT") {
         clearTimeout(timeout);
