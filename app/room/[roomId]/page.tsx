@@ -111,9 +111,12 @@ export default function RoomPage() {
         gameState={gameState}
         isHost={isHost}
         playerId={playerId}
+        playerName={playerName}
         myTeam={myTeam}
         players={players}
         dispatch={dispatch}
+        setPlayerName={setPlayerName}
+        joinTeam={joinTeam}
       />
     );
   }
@@ -232,6 +235,29 @@ export default function RoomPage() {
           <ActionButtons dispatch={dispatch} isExplainer={isExplainer} />
         </div>
 
+        {/* Watcher strip — let late joiners pick a team without leaving */}
+        {myTeam === null && !isExplainer && (
+          <div className="px-4 pb-3">
+            <div
+              className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+            >
+              <span className="text-gray-500 text-xs">הצטרף לקבוצה:</span>
+              <div className="flex gap-2">
+                {([0, 1] as const).map((i) => (
+                  <button
+                    key={i}
+                    onClick={() => joinTeam(i)}
+                    className="px-3 py-1 rounded-lg text-xs font-bold touch-manipulation active:scale-95 transition-all"
+                    style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "#9ca3af" }}
+                  >
+                    {gameState.teams[i].name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -241,6 +267,8 @@ export default function RoomPage() {
       <TurnSummary
         gameState={gameState}
         isHost={isHost}
+        myTeam={myTeam}
+        joinTeam={joinTeam}
         dispatch={dispatch}
       />
     );

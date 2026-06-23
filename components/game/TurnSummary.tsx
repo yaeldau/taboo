@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { GameState, TurnResult } from "@/types/game";
+import type { GameState, TurnResult, PlayerPresence } from "@/types/game";
 import type { GameAction } from "@/hooks/useGameRoom";
 import { Button } from "@/components/ui/button";
 import { ExitButton } from "@/components/game/ExitButton";
@@ -7,6 +7,8 @@ import { ExitButton } from "@/components/game/ExitButton";
 interface Props {
   gameState: GameState;
   isHost: boolean;
+  myTeam: 0 | 1 | null;
+  joinTeam: (teamId: 0 | 1 | null) => void;
   dispatch: (action: GameAction) => void;
 }
 
@@ -18,7 +20,7 @@ function OutcomeIcon({ outcome }: { outcome: TurnResult["outcome"] }) {
   return <span className="text-gray-500 font-black">⟩⟩</span>;
 }
 
-export function TurnSummary({ gameState, isHost, dispatch }: Props) {
+export function TurnSummary({ gameState, isHost, myTeam, joinTeam, dispatch }: Props) {
   const [advancing, setAdvancing] = useState(false);
   const { turnResults, teams, activeTeam, currentRound, totalRounds } = gameState;
   const isLastTurn = activeTeam === 1 && currentRound === totalRounds;
@@ -142,6 +144,25 @@ export function TurnSummary({ gameState, isHost, dispatch }: Props) {
           </div>
         )}
       </div>
+
+      {/* Late-join strip — for players not yet on a team */}
+      {myTeam === null && (
+        <div className="flex-shrink-0 pt-1">
+          <p className="text-gray-600 text-xs text-center mb-1.5">הצטרף לקבוצה</p>
+          <div className="grid grid-cols-2 gap-2">
+            {([0, 1] as const).map((i) => (
+              <button
+                key={i}
+                onClick={() => joinTeam(i)}
+                className="py-2 rounded-xl text-sm font-bold touch-manipulation active:scale-95 transition-all"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#9ca3af" }}
+              >
+                {teams[i].name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

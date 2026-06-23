@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { GameState, PlayerPresence } from "@/types/game";
 import type { GameAction } from "@/hooks/useGameRoom";
 import { ExitButton } from "@/components/game/ExitButton";
@@ -8,110 +9,162 @@ interface Props {
   gameState: GameState;
   isHost: boolean;
   playerId: string;
+  playerName: string;
   myTeam: 0 | 1 | null;
   players: PlayerPresence[];
   dispatch: (action: GameAction) => void;
+  setPlayerName: (name: string) => void;
+  joinTeam: (teamId: 0 | 1 | null) => void;
 }
 
-export function ClaimTurn({ gameState, isHost, playerId, myTeam, players, dispatch }: Props) {
+export function ClaimTurn({
+  gameState,
+  isHost,
+  playerId,
+  playerName,
+  myTeam,
+  players,
+  dispatch,
+  setPlayerName,
+  joinTeam,
+}: Props) {
   const { teams, activeTeam, currentRound, totalRounds } = gameState;
+  const [nameInput, setNameInput] = useState(playerName);
 
-  const activeTeamPlayers = players.filter((p) => p.teamId === activeTeam);
+  const myName = players.find((p) => p.playerId === playerId)?.name || nameInput || "שחקן";
   const isMyTurn = myTeam === activeTeam;
-
-  const myName = players.find((p) => p.playerId === playerId)?.name || "שחקן";
 
   function handleClaim() {
     dispatch({ type: "claim_explainer", playerId, playerName: myName });
   }
 
+  function handleNameBlur() {
+    const trimmed = nameInput.trim();
+    if (trimmed) setPlayerName(trimmed);
+  }
+
   return (
-    <div className="flex flex-col h-dvh bg-gradient-to-b from-gray-950 to-gray-900 px-5 pt-4 pb-6 gap-4">
-      {/* Top bar with exit */}
-      <div className="flex justify-start flex-shrink-0">
+    <div className="flex flex-col h-dvh bg-gradient-to-b from-gray-950 to-gray-900 px-5 pt-4 pb-5 gap-3 overflow-y-auto">
+      {/* Top row: exit + round info */}
+      <div className="flex items-center justify-between flex-shrink-0">
         <ExitButton isHost={isHost} dispatch={dispatch} />
+        <span className="text-gray-500 text-xs">
+          סיבוב {currentRound} מתוך {totalRounds}
+        </span>
       </div>
 
-      {/* Header */}
-      <div className="text-center space-y-1">
-        <p className="text-gray-500 text-sm">
-          סיבוב {currentRound} מתוך {totalRounds}
-        </p>
-        <h2 className="text-2xl font-black text-white">
-          תור {teams[activeTeam].name}
-        </h2>
+      {/* Heading */}
+      <div className="text-center flex-shrink-0">
+        <h2 className="text-2xl font-black text-white">תור {teams[activeTeam].name}</h2>
         <p className="text-gray-400 text-sm">מי מסביר הפעם?</p>
       </div>
 
-      {/* Scores */}
-      <div className="grid grid-cols-2 gap-3 max-w-xs w-full mx-auto">
-        {([0, 1] as const).map((i) => (
-          <div
-            key={i}
-            className="text-center py-2 rounded-xl"
-            style={
-              i === activeTeam
-                ? { background: "rgba(230,57,70,0.15)", border: "1px solid rgba(230,57,70,0.3)" }
-                : { background: "rgba(255,255,255,0.04)" }
-            }
-          >
-            <div className="text-xs text-gray-400 mb-0.5 truncate">{teams[i].name}</div>
-            <div className="text-2xl font-black text-white">{teams[i].score}</div>
-          </div>
-        ))}
+      {/* Name input */}
+      <div className="flex-shrink-0">
+        <p className="text-gray-500 text-xs text-center mb-1 uppercase tracking-widest">השם שלי</p>
+        <input
+          type="text"
+          inputMode="text"
+          autoComplete="off"
+          value={nameInput}
+          onChange={(e) => setNameInput(e.target.value.slice(0, 16))}
+          onBlur={(e) => {
+            e.target.style.border = "1px solid rgba(255,255,255,0.12)";
+            handleNameBlur();
+          }}
+          onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+          placeholder="הכנס שם..."
+          dir="rtl"
+          className="w-full text-center text-sm font-bold rounded-xl py-2 px-3 text-white outline-none"
+          style={{
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.12)",
+          }}
+          onFocus={(e) => (e.target.style.border = "1px solid rgba(230,57,70,0.5)")}
+        />
       </div>
 
-      {/* Active team player list */}
-      {activeTeamPlayers.length > 0 && (
-        <div className="max-w-xs w-full mx-auto">
-          <p className="text-gray-600 text-xs text-center mb-2 uppercase tracking-widest">
-            שחקני {teams[activeTeam].name}
-          </p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {activeTeamPlayers.map((p) => (
-              <span
-                key={p.playerId}
-                className="px-3 py-1 rounded-full text-sm font-semibold"
+      {/* Both teams — join from here */}
+      <div className="grid grid-cols-2 gap-3 flex-shrink-0">
+        {([0, 1] as const).map((i) => {
+          const members = players.filter((p) => p.teamId === i);
+          const isMyTeam = myTeam === i;
+          return (
+            <div
+              key={i}
+              className="flex flex-col gap-1.5 rounded-2xl p-3"
+              style={
+                i === activeTeam
+                  ? { background: "rgba(230,57,70,0.1)", border: "1px solid rgba(230,57,70,0.25)" }
+                  : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }
+              }
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-black text-white truncate">{teams[i].name}</span>
+                <span className="text-xs font-bold text-gray-400">{teams[i].score}</span>
+              </div>
+
+              {/* Members */}
+              <div className="min-h-[1.25rem] flex flex-wrap gap-1">
+                {members.map((p) => (
+                  <span
+                    key={p.playerId}
+                    className="text-xs rounded-full px-2 py-0.5"
+                    style={
+                      p.playerId === playerId
+                        ? { background: "rgba(230,57,70,0.2)", color: "#fca5a5" }
+                        : { background: "rgba(255,255,255,0.07)", color: "#9ca3af" }
+                    }
+                  >
+                    {p.name || "שחקן"}
+                  </span>
+                ))}
+              </div>
+
+              {/* Join / leave button */}
+              <button
+                onClick={() => joinTeam(isMyTeam ? null : i)}
+                className="w-full py-1 rounded-xl text-xs font-bold transition-all active:scale-95 touch-manipulation"
                 style={
-                  p.playerId === playerId
-                    ? { background: "rgba(230,57,70,0.2)", color: "#fca5a5", border: "1px solid rgba(230,57,70,0.4)" }
-                    : { background: "rgba(255,255,255,0.07)", color: "#d1d5db" }
+                  isMyTeam
+                    ? { background: "rgba(230,57,70,0.25)", border: "1px solid rgba(230,57,70,0.5)", color: "#fca5a5" }
+                    : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#6b7280" }
                 }
               >
-                {p.name || "שחקן"}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+                {isMyTeam ? "✓ אני כאן" : "הצטרף"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
 
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Claim button or waiting message */}
-      <div className="max-w-xs w-full mx-auto space-y-3">
-        {isMyTurn ? (
-          <button
-            onClick={handleClaim}
-            className="w-full h-16 rounded-2xl font-black text-xl text-white active:scale-95 transition-transform touch-manipulation"
-            style={{
-              background: "linear-gradient(135deg, #e63946, #c1121f)",
-              boxShadow: "0 8px 32px rgba(230,57,70,0.4)",
-            }}
-          >
-            אני מסביר! 🎤
-          </button>
-        ) : (
-          <div
-            className="w-full py-5 rounded-2xl text-center"
-            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-          >
-            <p className="text-gray-400 text-base animate-pulse">
-              ממתין לשחקן מ{teams[activeTeam].name}...
-            </p>
-          </div>
-        )}
-      </div>
+      {/* Claim / waiting */}
+      {isMyTurn ? (
+        <button
+          onClick={handleClaim}
+          className="w-full h-14 rounded-2xl font-black text-xl text-white active:scale-95 transition-transform touch-manipulation flex-shrink-0"
+          style={{
+            background: "linear-gradient(135deg, #e63946, #c1121f)",
+            boxShadow: "0 8px 32px rgba(230,57,70,0.4)",
+          }}
+        >
+          אני מסביר! 🎤
+        </button>
+      ) : (
+        <div
+          className="w-full py-4 rounded-2xl text-center flex-shrink-0"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+        >
+          <p className="text-gray-400 text-base animate-pulse">
+            {myTeam === null
+              ? "הצטרף לקבוצה כדי לשחק"
+              : `ממתין לשחקן מ${teams[activeTeam].name}...`}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
