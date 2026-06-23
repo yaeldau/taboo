@@ -21,17 +21,20 @@ export function TurnScoreCounter({ results }: Props) {
           border: "1px solid rgba(255,255,255,0.07)",
         }}
       >
-        {/* Net score — clearly labelled */}
-        <span className="flex flex-col items-center w-14 flex-shrink-0 py-1">
-          <span className="text-[9px] leading-none mb-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
-            ניקוד
-          </span>
-          <span
-            className="text-sm font-black tabular-nums transition-colors duration-300"
-            style={{ color: netColor }}
-          >
-            {netLabel}
-          </span>
+        {/* Net score — tinted badge so it reads as "the score", not a count */}
+        <span
+          className="w-14 flex-shrink-0 self-stretch flex items-center justify-center text-sm font-black tabular-nums rounded-full transition-colors duration-300"
+          style={{
+            color: netColor,
+            background:
+              net > 0
+                ? "rgba(74,222,128,0.15)"
+                : net < 0
+                ? "rgba(248,113,113,0.15)"
+                : "rgba(255,255,255,0.06)",
+          }}
+        >
+          {netLabel}
         </span>
 
         {/* Separator */}
