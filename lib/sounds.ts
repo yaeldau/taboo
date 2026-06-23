@@ -1,4 +1,4 @@
-export type SoundType = "correct" | "taboo" | "skip";
+export type SoundType = "correct" | "taboo" | "skip" | "turn_end";
 
 let ctx: AudioContext | null = null;
 
@@ -55,6 +55,10 @@ export function toggleMute(): boolean {
   return next;
 }
 
+export function primeAudio(): void {
+  getCtx();
+}
+
 export function playSound(type: SoundType): void {
   if (isMuted()) return;
   try {
@@ -75,6 +79,12 @@ export function playSound(type: SoundType): void {
         // Short descending buzz: A3 → E3
         playTone(audioCtx, 220, t, 0.09, "sawtooth", 0.25);
         playTone(audioCtx, 165, t + 0.08, 0.13, "sawtooth", 0.2);
+        break;
+      case "turn_end":
+        // Time's up buzzer: three descending sawtooth tones
+        playTone(audioCtx, 280, t, 0.16, "sawtooth", 0.35);
+        playTone(audioCtx, 210, t + 0.18, 0.16, "sawtooth", 0.3);
+        playTone(audioCtx, 150, t + 0.36, 0.28, "sawtooth", 0.28);
         break;
     }
   } catch {

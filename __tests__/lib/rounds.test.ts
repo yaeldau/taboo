@@ -67,9 +67,9 @@ describe("nextTurn round counting", () => {
     expect(nextTurn(s).activeTeam).toBe(0);
   });
 
-  it("stays in playing phase when rounds remain", () => {
+  it("transitions to claiming phase when rounds remain", () => {
     const s = makeState({ activeTeam: 1, currentRound: 1, totalRounds: 3, cardQueue: [FAKE_CARD] });
-    expect(nextTurn(s).phase).toBe("playing");
+    expect(nextTurn(s).phase).toBe("claiming");
   });
 
   it("auto-ends game after last round's last turn (team 1 completes final round)", () => {
@@ -80,7 +80,7 @@ describe("nextTurn round counting", () => {
   it("does NOT auto-end when team 0 finishes the last round (team 1 still to play)", () => {
     const s = makeState({ activeTeam: 0, currentRound: 3, totalRounds: 3, cardQueue: [FAKE_CARD] });
     const next = nextTurn(s);
-    expect(next.phase).toBe("playing");
+    expect(next.phase).toBe("claiming");
     expect(next.currentRound).toBe(3); // round stays at 3, team 1 still plays
   });
 
@@ -105,7 +105,7 @@ describe("nextTurn round counting", () => {
   it("works with large totalRounds (5 rounds)", () => {
     const s = makeState({ activeTeam: 1, currentRound: 4, totalRounds: 5, cardQueue: [FAKE_CARD] });
     const next = nextTurn(s);
-    expect(next.phase).toBe("playing");
+    expect(next.phase).toBe("claiming");
     expect(next.currentRound).toBe(5);
   });
 });

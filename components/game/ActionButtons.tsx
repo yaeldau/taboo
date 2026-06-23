@@ -6,7 +6,7 @@ import { playSound } from "@/lib/sounds";
 
 interface Props {
   dispatch: (action: GameAction) => void;
-  isHost: boolean;
+  isExplainer: boolean;
 }
 
 function vibrate(pattern: number | number[]) {
@@ -15,13 +15,13 @@ function vibrate(pattern: number | number[]) {
   }
 }
 
-export function ActionButtons({ dispatch, isHost }: Props) {
+export function ActionButtons({ dispatch, isExplainer }: Props) {
   const lastFiredAt = useRef(0);
 
-  if (!isHost) {
+  if (!isExplainer) {
     return (
       <div className="text-center py-5">
-        <p className="text-gray-600 text-sm">המארח מנהל את הקלפים</p>
+        <p className="text-gray-600 text-sm">המסביר מנהל את הקלפים</p>
       </div>
     );
   }

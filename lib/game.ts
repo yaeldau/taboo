@@ -1,5 +1,5 @@
 import type { GameState, TurnOutcome, TurnResult, Team } from "@/types/game";
-import { DEFAULT_GAME_STATE, TURN_DURATION_MS } from "@/types/game";
+import { DEFAULT_GAME_STATE } from "@/types/game";
 import { getShuffledDeck } from "@/lib/cards";
 
 function drawFromQueue(state: GameState): {
@@ -11,12 +11,31 @@ function drawFromQueue(state: GameState): {
   return { card: card ?? null, queue: rest };
 }
 
+/** Transitions from lobby to claiming phase; shuffles deck but waits for explainer to be claimed. */
 export function startGame(state: GameState): GameState {
-  const base: GameState = { ...state, cardQueue: [], activeTeam: 0, currentRound: 1 };
-  const { card, queue } = drawFromQueue(base);
   return {
-    ...base,
+    ...state,
+    phase: "claiming",
+    activeTeam: 0,
+    currentRound: 1,
+    cardQueue: getShuffledDeck(),
+    currentCard: null,
+    turnResults: [],
+    turnStartedAt: null,
+    activeExplainerPlayerId: null,
+    activeExplainerName: "",
+  };
+}
+
+/** Called when a player claims the explainer role; starts the turn timer and draws the first card. */
+export function claimExplainer(state: GameState, playerId: string, playerName: string): GameState {
+  if (state.phase !== "claiming") return state;
+  const { card, queue } = drawFromQueue(state);
+  return {
+    ...state,
     phase: "playing",
+    activeExplainerPlayerId: playerId,
+    activeExplainerName: playerName,
     currentCard: card,
     cardQueue: queue,
     turnResults: [],
@@ -69,9 +88,9 @@ export function endTurn(state: GameState): GameState {
   };
 }
 
+/** Transitions to claiming phase for the next team's turn. Returns endGame if all rounds are done. */
 export function nextTurn(state: GameState): GameState {
   const nextTeam: 0 | 1 = state.activeTeam === 0 ? 1 : 0;
-  // Completing a round = team 1 finishes (we're switching back to team 0)
   const completingRound = state.activeTeam === 1;
   const nextRound = completingRound ? state.currentRound + 1 : state.currentRound;
 
@@ -79,7 +98,17 @@ export function nextTurn(state: GameState): GameState {
     return endGame(state);
   }
 
-  return startTurn({ ...state, activeTeam: nextTeam, currentRound: nextRound });
+  return {
+    ...state,
+    phase: "claiming",
+    activeTeam: nextTeam,
+    currentRound: nextRound,
+    currentCard: null,
+    turnResults: [],
+    turnStartedAt: null,
+    activeExplainerPlayerId: null,
+    activeExplainerName: "",
+  };
 }
 
 export function endGame(state: GameState): GameState {
@@ -108,9 +137,12 @@ export function timeRemainingMs(state: GameState): number {
   return Math.max(0, state.turnDurationMs - (Date.now() - state.turnStartedAt));
 }
 
-/** Returns a copy of state safe to broadcast to non-host clients (card data stripped). */
+/**
+ * Returns a copy of state safe to broadcast to all clients.
+ * Strips cardQueue (future cards) but keeps currentCard so the active explainer can see it.
+ */
 export function redactStateForBroadcast(state: GameState): GameState {
-  return { ...state, currentCard: null, cardQueue: [] };
+  return { ...state, cardQueue: [] };
 }
 
 export interface TurnStats {

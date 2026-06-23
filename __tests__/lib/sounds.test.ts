@@ -79,5 +79,11 @@ describe("playSound", () => {
     expect(() => playSound("correct")).not.toThrow();
     expect(() => playSound("taboo")).not.toThrow();
     expect(() => playSound("skip")).not.toThrow();
+    expect(() => playSound("turn_end")).not.toThrow();
+  });
+
+  it("does not throw turn_end when muted", () => {
+    setMuted(true);
+    expect(() => playSound("turn_end")).not.toThrow();
   });
 });

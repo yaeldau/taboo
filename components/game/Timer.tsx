@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { timeRemainingMs } from "@/lib/game";
+import { playSound } from "@/lib/sounds";
 import type { GameState } from "@/types/game";
 
 interface Props {
@@ -10,10 +11,17 @@ interface Props {
 
 export function Timer({ gameState }: Props) {
   const [remaining, setRemaining] = useState(() => timeRemainingMs(gameState));
+  const soundedRef = useRef(false);
 
   useEffect(() => {
+    soundedRef.current = false;
     const interval = setInterval(() => {
-      setRemaining(timeRemainingMs(gameState));
+      const r = timeRemainingMs(gameState);
+      setRemaining(r);
+      if (r <= 0 && !soundedRef.current) {
+        soundedRef.current = true;
+        playSound("turn_end");
+      }
     }, 100);
     return () => clearInterval(interval);
   }, [gameState]);

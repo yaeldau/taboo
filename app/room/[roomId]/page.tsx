@@ -11,12 +11,27 @@ import { ActionButtons } from "@/components/game/ActionButtons";
 import { TurnSummary } from "@/components/game/TurnSummary";
 import { GameEnded } from "@/components/game/GameEnded";
 import { TurnScoreCounter } from "@/components/game/TurnScoreCounter";
+import { ClaimTurn } from "@/components/game/ClaimTurn";
 import { Volume2, VolumeX } from "lucide-react";
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
-  const { gameState, isHost, connected, connectionError, connectionErrorReason, playerCount, dispatch } =
-    useGameRoom(roomId);
+  const {
+    gameState,
+    isHost,
+    isExplainer,
+    playerId,
+    playerName,
+    myTeam,
+    players,
+    connected,
+    connectionError,
+    connectionErrorReason,
+    playerCount,
+    dispatch,
+    setPlayerName,
+    joinTeam,
+  } = useGameRoom(roomId);
   const { muted, toggleMute } = useSound();
 
   // Keep screen awake during gameplay
@@ -78,6 +93,24 @@ export default function RoomPage() {
         isHost={isHost}
         playerCount={playerCount}
         roomId={roomId}
+        playerId={playerId}
+        playerName={playerName}
+        myTeam={myTeam}
+        players={players}
+        dispatch={dispatch}
+        setPlayerName={setPlayerName}
+        joinTeam={joinTeam}
+      />
+    );
+  }
+
+  if (gameState.phase === "claiming") {
+    return (
+      <ClaimTurn
+        gameState={gameState}
+        playerId={playerId}
+        myTeam={myTeam}
+        players={players}
         dispatch={dispatch}
       />
     );
@@ -147,9 +180,18 @@ export default function RoomPage() {
           </div>
         </div>
 
-        {/* Card — only the host (clue giver) sees the word */}
+        {/* Explainer name banner */}
+        {gameState.activeExplainerName && (
+          <div className="text-center py-0.5">
+            <span className="text-xs text-gray-500">
+              מסביר: <span className="text-gray-400 font-semibold">{gameState.activeExplainerName}</span>
+            </span>
+          </div>
+        )}
+
+        {/* Card — explainer sees word; everyone else sees guess prompt */}
         <div className="flex-1 flex flex-col items-center justify-center px-4 py-1 gap-1 overflow-hidden">
-          {isHost ? (
+          {isExplainer ? (
             gameState.currentCard && (
               <>
                 <p className="text-gray-600 text-xs tabular-nums">
@@ -160,16 +202,18 @@ export default function RoomPage() {
             )
           ) : (
             <div
-              className="w-full max-w-sm rounded-3xl flex flex-col items-center justify-center gap-4 py-16"
+              className="w-full max-w-sm rounded-3xl flex flex-col items-center justify-center gap-3 py-10"
               style={{
                 background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
                 border: "2px solid rgba(255,255,255,0.08)",
               }}
             >
-              <div className="text-6xl">🤔</div>
+              <div className="text-5xl">🤔</div>
               <p className="text-white text-2xl font-black">נחשו!</p>
               <p className="text-gray-500 text-sm text-center px-6">
-                המארח מתאר — נסו לנחש את המילה
+                {gameState.activeExplainerName
+                  ? `${gameState.activeExplainerName} מתאר — נסו לנחש`
+                  : "המסביר מתאר — נסו לנחש את המילה"}
               </p>
             </div>
           )}
@@ -180,7 +224,7 @@ export default function RoomPage() {
 
         {/* Action buttons pinned to bottom */}
         <div className="px-4 pt-0 pb-2">
-          <ActionButtons dispatch={dispatch} isHost={isHost} />
+          <ActionButtons dispatch={dispatch} isExplainer={isExplainer} />
         </div>
 
         {/* End game — subtle, host only */}

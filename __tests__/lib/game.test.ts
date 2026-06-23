@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   startGame,
   startTurn,
+  claimExplainer,
   recordResult,
   endTurn,
   nextTurn,
@@ -32,21 +33,24 @@ const FAKE_CARD_2 = { word: "שמש", forbidden: ["חם", "אור", "כוכב", 
 // ─── startGame ───────────────────────────────────────────────────────────────
 
 describe("startGame", () => {
-  it("transitions phase from lobby to playing", () => {
+  it("transitions phase from lobby to claiming", () => {
     const next = startGame(makeState());
-    expect(next.phase).toBe("playing");
+    expect(next.phase).toBe("claiming");
   });
 
-  it("draws a card", () => {
+  it("does not draw a card yet (waits for claim)", () => {
     const next = startGame(makeState());
-    expect(next.currentCard).not.toBeNull();
+    expect(next.currentCard).toBeNull();
   });
 
-  it("sets turnStartedAt to a recent timestamp", () => {
-    const before = Date.now();
+  it("pre-shuffles the deck into cardQueue", () => {
     const next = startGame(makeState());
-    expect(next.turnStartedAt).toBeGreaterThanOrEqual(before);
-    expect(next.turnStartedAt).toBeLessThanOrEqual(Date.now());
+    expect(next.cardQueue.length).toBeGreaterThan(0);
+  });
+
+  it("does not set turnStartedAt", () => {
+    const next = startGame(makeState());
+    expect(next.turnStartedAt).toBeNull();
   });
 
   it("always starts with team 0", () => {
@@ -73,6 +77,68 @@ describe("startGame", () => {
     expect(next.teams[1].name).toBe("שניים");
     expect(next.teams[0].score).toBe(3);
     expect(next.teams[1].score).toBe(2);
+  });
+
+  it("clears activeExplainerPlayerId", () => {
+    const s = makeState({ activeExplainerPlayerId: "abc", activeExplainerName: "Foo" });
+    const next = startGame(s);
+    expect(next.activeExplainerPlayerId).toBeNull();
+    expect(next.activeExplainerName).toBe("");
+  });
+});
+
+// ─── claimExplainer ──────────────────────────────────────────────────────────
+
+describe("claimExplainer", () => {
+  const claimingState = makeState({
+    phase: "claiming",
+    activeTeam: 0,
+    cardQueue: [FAKE_CARD, FAKE_CARD_2],
+  });
+
+  it("transitions phase to playing", () => {
+    const next = claimExplainer(claimingState, "player-1", "Alice");
+    expect(next.phase).toBe("playing");
+  });
+
+  it("sets activeExplainerPlayerId and name", () => {
+    const next = claimExplainer(claimingState, "player-1", "Alice");
+    expect(next.activeExplainerPlayerId).toBe("player-1");
+    expect(next.activeExplainerName).toBe("Alice");
+  });
+
+  it("draws the first card from the queue", () => {
+    const next = claimExplainer(claimingState, "player-1", "Alice");
+    expect(next.currentCard).toEqual(FAKE_CARD);
+    expect(next.cardQueue).toHaveLength(1);
+  });
+
+  it("sets turnStartedAt to a recent timestamp", () => {
+    const before = Date.now();
+    const next = claimExplainer(claimingState, "player-1", "Alice");
+    expect(next.turnStartedAt).toBeGreaterThanOrEqual(before);
+    expect(next.turnStartedAt).toBeLessThanOrEqual(Date.now());
+  });
+
+  it("clears turnResults", () => {
+    const s = makeState({
+      phase: "claiming",
+      cardQueue: [FAKE_CARD],
+      turnResults: [{ word: "x", outcome: "correct" }],
+    });
+    expect(claimExplainer(s, "p1", "Alice").turnResults).toHaveLength(0);
+  });
+
+  it("is a no-op when phase is not claiming", () => {
+    const s = makeState({ phase: "playing", cardQueue: [FAKE_CARD] });
+    const next = claimExplainer(s, "p1", "Alice");
+    expect(next).toBe(s);
+  });
+
+  it("refills from deck when queue is empty", () => {
+    const s = makeState({ phase: "claiming", cardQueue: [] });
+    const next = claimExplainer(s, "p1", "Alice");
+    expect(next.currentCard).not.toBeNull();
   });
 });
 
@@ -278,9 +344,14 @@ describe("nextTurn", () => {
     expect(nextTurn(s).activeTeam).toBe(0);
   });
 
-  it("starts a fresh turn (sets phase to playing)", () => {
+  it("transitions to claiming phase (not directly to playing)", () => {
     const s = makeState({ phase: "turn_summary", activeTeam: 0, cardQueue: [FAKE_CARD] });
-    expect(nextTurn(s).phase).toBe("playing");
+    expect(nextTurn(s).phase).toBe("claiming");
+  });
+
+  it("does not draw a card", () => {
+    const s = makeState({ phase: "turn_summary", activeTeam: 0, cardQueue: [FAKE_CARD] });
+    expect(nextTurn(s).currentCard).toBeNull();
   });
 
   it("clears turnResults", () => {
@@ -290,6 +361,18 @@ describe("nextTurn", () => {
       turnResults: [{ word: "x", outcome: "correct" }],
     });
     expect(nextTurn(s).turnResults).toHaveLength(0);
+  });
+
+  it("clears activeExplainerPlayerId", () => {
+    const s = makeState({
+      activeTeam: 0,
+      cardQueue: [FAKE_CARD],
+      activeExplainerPlayerId: "p1",
+      activeExplainerName: "Alice",
+    });
+    const next = nextTurn(s);
+    expect(next.activeExplainerPlayerId).toBeNull();
+    expect(next.activeExplainerName).toBe("");
   });
 });
 
@@ -407,12 +490,12 @@ describe("timeRemainingMs", () => {
 // ─── redactStateForBroadcast ─────────────────────────────────────────────────
 
 describe("redactStateForBroadcast", () => {
-  it("strips currentCard (null)", () => {
+  it("preserves currentCard (explainer needs to see it)", () => {
     const s = makeState({ currentCard: FAKE_CARD });
-    expect(redactStateForBroadcast(s).currentCard).toBeNull();
+    expect(redactStateForBroadcast(s).currentCard).toEqual(FAKE_CARD);
   });
 
-  it("empties cardQueue", () => {
+  it("empties cardQueue (future cards stay secret)", () => {
     const s = makeState({ cardQueue: [FAKE_CARD, FAKE_CARD_2] });
     expect(redactStateForBroadcast(s).cardQueue).toHaveLength(0);
   });
@@ -465,6 +548,13 @@ describe("redactStateForBroadcast", () => {
   it("handles empty queue gracefully", () => {
     const s = makeState({ cardQueue: [] });
     expect(redactStateForBroadcast(s).cardQueue).toHaveLength(0);
+  });
+
+  it("preserves activeExplainerPlayerId and name", () => {
+    const s = makeState({ activeExplainerPlayerId: "p1", activeExplainerName: "Alice" });
+    const r = redactStateForBroadcast(s);
+    expect(r.activeExplainerPlayerId).toBe("p1");
+    expect(r.activeExplainerName).toBe("Alice");
   });
 });
 

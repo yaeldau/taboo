@@ -1,4 +1,4 @@
-export type GamePhase = "lobby" | "playing" | "turn_summary" | "ended";
+export type GamePhase = "lobby" | "claiming" | "playing" | "turn_summary" | "ended";
 
 export interface Team {
   id: 0 | 1;
@@ -18,6 +18,13 @@ export interface TurnResult {
   outcome: TurnOutcome;
 }
 
+export interface PlayerPresence {
+  playerId: string;
+  name: string;
+  teamId: 0 | 1 | null;
+  joined_at: number;
+}
+
 export interface GameState {
   phase: GamePhase;
   teams: [Team, Team];
@@ -34,6 +41,10 @@ export interface GameState {
   currentRound: number;
   /** Turn duration in milliseconds */
   turnDurationMs: number;
+  /** playerId of the player currently explaining; null during claiming phase */
+  activeExplainerPlayerId: string | null;
+  /** Display name of the active explainer */
+  activeExplainerName: string;
 }
 
 export const TURN_DURATION_MS = 60_000;
@@ -52,6 +63,8 @@ export const DEFAULT_GAME_STATE: GameState = {
   totalRounds: 3,
   currentRound: 1,
   turnDurationMs: TURN_DURATION_MS,
+  activeExplainerPlayerId: null,
+  activeExplainerName: "",
 };
 
 /** Message broadcast over the Supabase Realtime channel */
