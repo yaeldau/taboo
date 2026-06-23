@@ -81,10 +81,10 @@ export function playSound(type: SoundType): void {
         playTone(audioCtx, 165, t + 0.08, 0.13, "sawtooth", 0.2);
         break;
       case "turn_end":
-        // Time's up buzzer: three descending sawtooth tones
-        playTone(audioCtx, 280, t, 0.16, "sawtooth", 0.35);
-        playTone(audioCtx, 210, t + 0.18, 0.16, "sawtooth", 0.3);
-        playTone(audioCtx, 150, t + 0.36, 0.28, "sawtooth", 0.28);
+        // Descending musical phrase G5 → E5 → C5 — conclusive "time's up"
+        playTone(audioCtx, 784, t,        0.13, "sine", 0.32);
+        playTone(audioCtx, 659, t + 0.15, 0.13, "sine", 0.30);
+        playTone(audioCtx, 523, t + 0.30, 0.40, "sine", 0.38);
         break;
     }
   } catch {
