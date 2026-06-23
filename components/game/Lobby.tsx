@@ -45,10 +45,25 @@ export function Lobby({
   const DURATION_OPTIONS = [30_000, 45_000, 60_000, 90_000] as const;
   const durationLabel = (ms: number) => `${ms / 1000}″`;
 
-  function handleShare() {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  async function handleShare() {
+    const url = window.location.href;
+    // Use native share sheet on mobile (WhatsApp, SMS, etc.)
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "טאבו", url });
+        return;
+      } catch (e) {
+        if (e instanceof Error && e.name === "AbortError") return; // user cancelled
+        // Other error — fall through to clipboard
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard unavailable — nothing to do
+    }
   }
 
   function handleStart() {

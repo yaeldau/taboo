@@ -38,6 +38,12 @@ function getOrCreatePlayerId(): string {
   return id;
 }
 
+function getStoredTeam(roomId: string): 0 | 1 | null {
+  if (typeof window === "undefined") return null;
+  const s = localStorage.getItem(`taboo_team_${roomId}`);
+  return s !== null ? (Number(s) as 0 | 1) : null;
+}
+
 export function useGameRoom(roomId: string) {
   const [gameState, setGameState] = useState<GameState>(DEFAULT_GAME_STATE);
   const [isHost, setIsHost] = useState(false);
@@ -46,7 +52,8 @@ export function useGameRoom(roomId: string) {
   const [connectionErrorReason, setConnectionErrorReason] = useState<string>("");
   const [playerCount, setPlayerCount] = useState(0);
   const [players, setPlayers] = useState<PlayerPresence[]>([]);
-  const [myTeam, setMyTeam] = useState<0 | 1 | null>(null);
+  // Restore team from localStorage so the button shows correct state on reload
+  const [myTeam, setMyTeam] = useState<0 | 1 | null>(() => getStoredTeam(roomId));
   const [playerName, setPlayerNameState] = useState<string>(() => {
     if (typeof window === "undefined") return "";
     return localStorage.getItem("taboo_player_name") || "";
@@ -57,9 +64,9 @@ export function useGameRoom(roomId: string) {
   const isHostRef = useRef(false);
   const playerIdRef = useRef<string>("");
   const playerNameRef = useRef<string>("");
-  const myTeamRef = useRef<0 | 1 | null>(null);
+  // Initialise ref from localStorage so it's correct in the subscribe callback
+  const myTeamRef = useRef<0 | 1 | null>(getStoredTeam(roomId));
   const isExplainerRef = useRef(false);
-  const joinedAtRef = useRef<number>(Date.now());
 
   const updateState = useCallback((state: GameState) => {
     setGameState(state);
@@ -85,29 +92,44 @@ export function useGameRoom(roomId: string) {
 
   isExplainerRef.current = isExplainer;
 
+  const broadcastPresence = useCallback((data: PlayerPresence) => {
+    channelRef.current?.track(data);
+    channelRef.current?.send({
+      type: "broadcast",
+      event: "presence_update",
+      payload: data,
+    });
+  }, []);
+
   const setPlayerName = useCallback((name: string) => {
     const trimmed = name.slice(0, 16);
     localStorage.setItem("taboo_player_name", trimmed);
     playerNameRef.current = trimmed;
     setPlayerNameState(trimmed);
-    channelRef.current?.track({
+    broadcastPresence({
       playerId: playerIdRef.current,
       name: trimmed,
       teamId: myTeamRef.current,
-      joined_at: joinedAtRef.current,
+      joined_at: Date.now(),
     });
-  }, []);
+  }, [broadcastPresence]);
 
   const joinTeam = useCallback((teamId: 0 | 1 | null) => {
     myTeamRef.current = teamId;
     setMyTeam(teamId);
-    channelRef.current?.track({
+    // Persist so the button shows the right state after a page reload
+    if (teamId !== null) {
+      localStorage.setItem(`taboo_team_${roomId}`, String(teamId));
+    } else {
+      localStorage.removeItem(`taboo_team_${roomId}`);
+    }
+    broadcastPresence({
       playerId: playerIdRef.current,
       name: playerNameRef.current,
       teamId,
-      joined_at: joinedAtRef.current,
+      joined_at: Date.now(),
     });
-  }, []);
+  }, [roomId, broadcastPresence]);
 
   const dispatch = useCallback(
     (action: GameAction) => {
@@ -155,7 +177,16 @@ export function useGameRoom(roomId: string) {
           case "reset":     return broadcast(resetGame(s));
         }
       } else if (action.type === "update_lobby_settings") {
-        broadcast(updateLobbySettings(s, action));
+        const newState = updateLobbySettings(s, action);
+        broadcast(newState);
+        // Re-send after a brief delay so non-hosts don't miss it if the first is dropped
+        setTimeout(() => {
+          channelRef.current?.send({
+            type: "broadcast",
+            event: "state_update",
+            payload: { state: redactStateForBroadcast(stateRef.current) },
+          });
+        }, 600);
       } else if (action.type === "start_game") {
         let base = s;
         if (action.teamNames) {
@@ -218,7 +249,6 @@ export function useGameRoom(roomId: string) {
 
     const pname = localStorage.getItem("taboo_player_name") || "";
     playerNameRef.current = pname;
-    joinedAtRef.current = Date.now();
 
     const channel = getRoomChannel(roomId);
     channelRef.current = channel;
@@ -241,11 +271,19 @@ export function useGameRoom(roomId: string) {
         const { playerId, playerName } = payload as { playerId: string; playerName: string };
         broadcast(applyClaimExplainer(stateRef.current, playerId, playerName));
       })
+      // Immediate presence update from any player (name change or team join/leave)
+      .on("broadcast", { event: "presence_update" }, ({ payload }) => {
+        const p = payload as PlayerPresence;
+        setPlayers((prev) => {
+          const filtered = prev.filter((x) => x.playerId !== p.playerId);
+          return [...filtered, p];
+        });
+      })
       .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState<PlayerPresence>();
         const raw = Object.values(state).flatMap((arr) => arr);
-        // Deduplicate by playerId — keep the most recent entry per player so a
-        // player can't appear in both teams after reconnecting or re-tracking.
+        // Deduplicate by playerId — keep the entry with the highest joined_at
+        // (we use Date.now() on every track() call so this always picks the freshest data)
         const byPlayer = new Map<string, PlayerPresence>();
         for (const p of raw) {
           const existing = byPlayer.get(p.playerId);
@@ -256,14 +294,10 @@ export function useGameRoom(roomId: string) {
         const list = [...byPlayer.values()];
         setPlayers(list);
         setPlayerCount(list.length);
-        const mine = list.find((p) => p.playerId === playerIdRef.current);
-        if (mine) {
-          const t = mine.teamId ?? null;
-          if (t !== myTeamRef.current) {
-            setMyTeam(t);
-            myTeamRef.current = t;
-          }
-        }
+        // NOTE: we intentionally do NOT update myTeam from presence here.
+        // myTeam is managed locally (joinTeam) and persisted in localStorage.
+        // Syncing it from presence caused a race condition where a stale sync
+        // would reset the team the player had just chosen.
       })
       .on("presence", { event: "join" }, () => {
         if (isHostRef.current) {
@@ -290,11 +324,19 @@ export function useGameRoom(roomId: string) {
         setConnected(true);
         setConnectionError(false);
         setConnectionErrorReason("");
-        await channel.track({
+        // Track presence with fresh timestamp so deduplication always picks the latest entry
+        const presenceData: PlayerPresence = {
           playerId: playerIdRef.current,
           name: playerNameRef.current,
           teamId: myTeamRef.current,
-          joined_at: joinedAtRef.current,
+          joined_at: Date.now(),
+        };
+        await channel.track(presenceData);
+        // Also broadcast so peers see us immediately without waiting for presence sync
+        channel.send({
+          type: "broadcast",
+          event: "presence_update",
+          payload: presenceData,
         });
       } else if (status === "TIMED_OUT" || status === "CHANNEL_ERROR") {
         console.log("Supabase will auto-reconnect:", status, err?.message ?? "");
