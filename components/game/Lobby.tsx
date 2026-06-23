@@ -43,7 +43,7 @@ export function Lobby({
   const [nameInput, setNameInput] = useState(playerName);
 
   const DURATION_OPTIONS = [30_000, 45_000, 60_000, 90_000] as const;
-  const durationLabel = (ms: number) => `${ms / 1000}″`;
+  const durationLabel = (ms: number) => `${ms / 1000}`;
 
   async function handleShare() {
     const url = window.location.href;
@@ -267,7 +267,7 @@ export function Lobby({
 
         {/* Turn duration picker */}
         <div className="w-full max-w-xs flex flex-col gap-1.5">
-          <p className="text-gray-500 text-xs text-center uppercase tracking-widest">זמן לתור</p>
+          <p className="text-gray-500 text-xs text-center uppercase tracking-widest">זמן לתור — שניות</p>
           {isHost ? (
             <div className="grid grid-cols-4 gap-2">
               {DURATION_OPTIONS.map((ms) => (
