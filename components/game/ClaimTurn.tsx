@@ -10,11 +10,11 @@ interface Props {
   isHost: boolean;
   playerId: string;
   playerName: string;
-  myTeam: 0 | 1 | null;
+  myTeam: number | null;
   players: PlayerPresence[];
   dispatch: (action: GameAction) => void;
   setPlayerName: (name: string) => void;
-  joinTeam: (teamId: 0 | 1 | null) => void;
+  joinTeam: (teamId: number | null) => void;
 }
 
 export function ClaimTurn({
@@ -84,9 +84,9 @@ export function ClaimTurn({
         />
       </div>
 
-      {/* Both teams — join from here */}
-      <div className="grid grid-cols-2 gap-3 flex-shrink-0">
-        {([0, 1] as const).map((i) => {
+      {/* All teams — join from here */}
+      <div className={`grid gap-3 flex-shrink-0 ${teams.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+        {teams.map((team, i) => {
           const members = players.filter((p) => p.teamId === i);
           const isMyTeam = myTeam === i;
           return (
@@ -100,8 +100,8 @@ export function ClaimTurn({
               }
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm font-black text-white truncate">{teams[i].name}</span>
-                <span className="text-xs font-bold text-gray-400">{teams[i].score}</span>
+                <span className="text-sm font-black text-white truncate">{team.name}</span>
+                <span className="text-xs font-bold text-gray-400">{team.score}</span>
               </div>
 
               {/* Members */}

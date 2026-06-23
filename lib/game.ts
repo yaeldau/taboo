@@ -1,4 +1,4 @@
-import type { GameState, TurnOutcome, TurnResult, Team } from "@/types/game";
+import type { GameState, TurnOutcome, TurnResult } from "@/types/game";
 import { DEFAULT_GAME_STATE } from "@/types/game";
 import { getShuffledDeck } from "@/lib/cards";
 
@@ -13,17 +13,18 @@ function drawFromQueue(state: GameState): {
 
 export function updateLobbySettings(
   state: GameState,
-  settings: { teamNames?: [string, string]; totalRounds?: number; turnDurationMs?: number },
+  settings: { teamNames?: string[]; totalRounds?: number; turnDurationMs?: number },
 ): GameState {
   if (state.phase !== "lobby") return state;
   let next = { ...state };
   if (settings.teamNames) {
     next = {
       ...next,
-      teams: [
-        { ...next.teams[0], name: settings.teamNames[0] },
-        { ...next.teams[1], name: settings.teamNames[1] },
-      ] as [Team, Team],
+      teams: settings.teamNames.map((name, i) => ({
+        id: i,
+        name,
+        score: next.teams[i]?.score ?? 0,
+      })),
     };
   }
   if (settings.totalRounds !== undefined) next = { ...next, totalRounds: settings.totalRounds };
@@ -96,8 +97,9 @@ export function endTurn(state: GameState): GameState {
     return acc;
   }, 0);
 
-  const teams: [Team, Team] = [{ ...state.teams[0] }, { ...state.teams[1] }];
-  teams[state.activeTeam].score += delta;
+  const teams = state.teams.map((t, i) =>
+    i === state.activeTeam ? { ...t, score: t.score + delta } : { ...t }
+  );
 
   return {
     ...state,
@@ -110,8 +112,8 @@ export function endTurn(state: GameState): GameState {
 
 /** Transitions to claiming phase for the next team's turn. Returns endGame if all rounds are done. */
 export function nextTurn(state: GameState): GameState {
-  const nextTeam: 0 | 1 = state.activeTeam === 0 ? 1 : 0;
-  const completingRound = state.activeTeam === 1;
+  const nextTeam = (state.activeTeam + 1) % state.teams.length;
+  const completingRound = state.activeTeam === state.teams.length - 1;
   const nextRound = completingRound ? state.currentRound + 1 : state.currentRound;
 
   if (completingRound && nextRound > state.totalRounds) {
@@ -140,10 +142,7 @@ export function resetGame(state: GameState): GameState {
     ...DEFAULT_GAME_STATE,
     totalRounds: state.totalRounds,
     turnDurationMs: state.turnDurationMs,
-    teams: [
-      { id: 0, name: state.teams[0].name, score: 0 },
-      { id: 1, name: state.teams[1].name, score: 0 },
-    ],
+    teams: state.teams.map((t) => ({ ...t, score: 0 })),
   };
 }
 

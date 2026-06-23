@@ -126,67 +126,91 @@ export default function RoomPage() {
     return (
       <div className="flex flex-col h-dvh bg-gray-950">
         {/* Top bar: Team scores flanking the timer, with mute toggle */}
-        <div className="flex items-center gap-2 px-4 pt-2 pb-1 sm:gap-3 sm:px-5 sm:pt-4 sm:pb-2">
-          {/* Team 0 — right side in RTL */}
-          <div
-            className={`flex-1 text-center transition-all duration-300 ${
-              activeTeam === 0 ? "opacity-100" : "opacity-35"
-            }`}
-          >
-            <div className="text-xs text-gray-400 truncate">
-              {teams[0].name}
+        {teams.length === 2 ? (
+          <div className="flex items-center gap-2 px-4 pt-2 pb-1 sm:gap-3 sm:px-5 sm:pt-4 sm:pb-2">
+            {/* Team 0 — right side in RTL */}
+            <div
+              className={`flex-1 text-center transition-all duration-300 ${
+                activeTeam === 0 ? "opacity-100" : "opacity-35"
+              }`}
+            >
+              <div className="text-xs text-gray-400 truncate">{teams[0].name}</div>
+              <div className="text-2xl sm:text-3xl font-black text-white leading-none mt-0.5">
+                {teams[0].score}
+              </div>
+              {activeTeam === 0 && (
+                <div className="w-1.5 h-1.5 rounded-full mx-auto mt-1" style={{ background: "#e63946" }} />
+              )}
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-white leading-none mt-0.5">
-              {teams[0].score}
-            </div>
-            {activeTeam === 0 && (
-              <div
-                className="w-1.5 h-1.5 rounded-full mx-auto mt-1"
-                style={{ background: "#e63946" }}
-              />
-            )}
-          </div>
 
-          {/* Timer + controls stacked */}
-          <div className="flex flex-col items-center gap-1 flex-shrink-0">
-            <Timer gameState={gameState} />
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={toggleMute}
-                className="flex items-center justify-center w-7 h-7 rounded-full touch-manipulation transition-colors active:scale-90"
-                style={{ background: "rgba(255,255,255,0.07)" }}
-                aria-label={muted ? "הפעל צלילים" : "השתק צלילים"}
-              >
-                {muted ? (
-                  <VolumeX className="w-4 h-4 text-gray-500" />
-                ) : (
-                  <Volume2 className="w-4 h-4 text-gray-400" />
-                )}
-              </button>
-              <ExitButton isHost={isHost} dispatch={dispatch} />
+            {/* Timer + controls stacked */}
+            <div className="flex flex-col items-center gap-1 flex-shrink-0">
+              <Timer gameState={gameState} />
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={toggleMute}
+                  className="flex items-center justify-center w-7 h-7 rounded-full touch-manipulation transition-colors active:scale-90"
+                  style={{ background: "rgba(255,255,255,0.07)" }}
+                  aria-label={muted ? "הפעל צלילים" : "השתק צלילים"}
+                >
+                  {muted ? <VolumeX className="w-4 h-4 text-gray-500" /> : <Volume2 className="w-4 h-4 text-gray-400" />}
+                </button>
+                <ExitButton isHost={isHost} dispatch={dispatch} />
+              </div>
             </div>
-          </div>
 
-          {/* Team 1 — left side in RTL */}
-          <div
-            className={`flex-1 text-center transition-all duration-300 ${
-              activeTeam === 1 ? "opacity-100" : "opacity-35"
-            }`}
-          >
-            <div className="text-xs text-gray-400 truncate">
-              {teams[1].name}
+            {/* Team 1 — left side in RTL */}
+            <div
+              className={`flex-1 text-center transition-all duration-300 ${
+                activeTeam === 1 ? "opacity-100" : "opacity-35"
+              }`}
+            >
+              <div className="text-xs text-gray-400 truncate">{teams[1].name}</div>
+              <div className="text-2xl sm:text-3xl font-black text-white leading-none mt-0.5">
+                {teams[1].score}
+              </div>
+              {activeTeam === 1 && (
+                <div className="w-1.5 h-1.5 rounded-full mx-auto mt-1" style={{ background: "#e63946" }} />
+              )}
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-white leading-none mt-0.5">
-              {teams[1].score}
-            </div>
-            {activeTeam === 1 && (
-              <div
-                className="w-1.5 h-1.5 rounded-full mx-auto mt-1"
-                style={{ background: "#e63946" }}
-              />
-            )}
           </div>
-        </div>
+        ) : (
+          /* 1 team or 3+ teams: compact column layout */
+          <div className="flex flex-col px-4 pt-2 pb-1 sm:px-5 sm:pt-4 sm:pb-2 gap-1">
+            <div className="flex gap-2 justify-around items-end">
+              {teams.map((team, i) => (
+                <div
+                  key={i}
+                  className={`text-center transition-all duration-300 flex-1 ${
+                    activeTeam === i ? "opacity-100" : "opacity-35"
+                  }`}
+                >
+                  <div className="text-xs text-gray-400 truncate">{team.name}</div>
+                  <div className="text-xl sm:text-2xl font-black text-white leading-none mt-0.5">
+                    {team.score}
+                  </div>
+                  {activeTeam === i && (
+                    <div className="w-1.5 h-1.5 rounded-full mx-auto mt-0.5" style={{ background: "#e63946" }} />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <Timer gameState={gameState} />
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={toggleMute}
+                  className="flex items-center justify-center w-7 h-7 rounded-full touch-manipulation transition-colors active:scale-90"
+                  style={{ background: "rgba(255,255,255,0.07)" }}
+                  aria-label={muted ? "הפעל צלילים" : "השתק צלילים"}
+                >
+                  {muted ? <VolumeX className="w-4 h-4 text-gray-500" /> : <Volume2 className="w-4 h-4 text-gray-400" />}
+                </button>
+                <ExitButton isHost={isHost} dispatch={dispatch} />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Explainer name banner */}
         {gameState.activeExplainerName && (
@@ -243,15 +267,15 @@ export default function RoomPage() {
               style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
             >
               <span className="text-gray-500 text-xs">הצטרף לקבוצה:</span>
-              <div className="flex gap-2">
-                {([0, 1] as const).map((i) => (
+              <div className="flex gap-2 flex-wrap">
+                {gameState.teams.map((team, i) => (
                   <button
                     key={i}
                     onClick={() => joinTeam(i)}
                     className="px-3 py-1 rounded-lg text-xs font-bold touch-manipulation active:scale-95 transition-all"
                     style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "#9ca3af" }}
                   >
-                    {gameState.teams[i].name}
+                    {team.name}
                   </button>
                 ))}
               </div>

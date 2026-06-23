@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { DEFAULT_GAME_STATE, type GameState, type Team, type PlayerPresence } from "@/types/game";
+import { DEFAULT_GAME_STATE, type GameState, type PlayerPresence } from "@/types/game";
 import { getRoomChannel } from "@/lib/supabase";
 import {
   startGame,
@@ -25,8 +25,8 @@ export type GameAction =
   | "next_turn"
   | "end_game"
   | "reset"
-  | { type: "start_game"; teamNames?: [string, string]; totalRounds?: number; turnDurationMs?: number }
-  | { type: "update_lobby_settings"; teamNames?: [string, string]; totalRounds?: number; turnDurationMs?: number }
+  | { type: "start_game"; teamNames?: string[]; totalRounds?: number; turnDurationMs?: number }
+  | { type: "update_lobby_settings"; teamNames?: string[]; totalRounds?: number; turnDurationMs?: number }
   | { type: "claim_explainer"; playerId: string; playerName: string };
 
 function getOrCreatePlayerId(): string {
@@ -38,10 +38,10 @@ function getOrCreatePlayerId(): string {
   return id;
 }
 
-function getStoredTeam(roomId: string): 0 | 1 | null {
+function getStoredTeam(roomId: string): number | null {
   if (typeof window === "undefined") return null;
   const s = localStorage.getItem(`taboo_team_${roomId}`);
-  return s !== null ? (Number(s) as 0 | 1) : null;
+  return s !== null ? Number(s) : null;
 }
 
 export function useGameRoom(roomId: string) {
@@ -53,7 +53,7 @@ export function useGameRoom(roomId: string) {
   const [playerCount, setPlayerCount] = useState(0);
   const [players, setPlayers] = useState<PlayerPresence[]>([]);
   // Restore team from localStorage so the button shows correct state on reload
-  const [myTeam, setMyTeam] = useState<0 | 1 | null>(() => getStoredTeam(roomId));
+  const [myTeam, setMyTeam] = useState<number | null>(() => getStoredTeam(roomId));
   const [playerName, setPlayerNameState] = useState<string>(() => {
     if (typeof window === "undefined") return "";
     return localStorage.getItem("taboo_player_name") || "";
@@ -65,7 +65,7 @@ export function useGameRoom(roomId: string) {
   const playerIdRef = useRef<string>("");
   const playerNameRef = useRef<string>("");
   // Initialise ref from localStorage so it's correct in the subscribe callback
-  const myTeamRef = useRef<0 | 1 | null>(getStoredTeam(roomId));
+  const myTeamRef = useRef<number | null>(getStoredTeam(roomId));
   const isExplainerRef = useRef(false);
 
   const updateState = useCallback((state: GameState) => {
@@ -114,7 +114,7 @@ export function useGameRoom(roomId: string) {
     });
   }, [broadcastPresence]);
 
-  const joinTeam = useCallback((teamId: 0 | 1 | null) => {
+  const joinTeam = useCallback((teamId: number | null) => {
     myTeamRef.current = teamId;
     setMyTeam(teamId);
     // Persist so the button shows the right state after a page reload
@@ -192,10 +192,7 @@ export function useGameRoom(roomId: string) {
         if (action.teamNames) {
           base = {
             ...base,
-            teams: [
-              { ...base.teams[0], name: action.teamNames[0] },
-              { ...base.teams[1], name: action.teamNames[1] },
-            ] as [Team, Team],
+            teams: action.teamNames.map((name, i) => ({ id: i, name, score: 0 })),
           };
         }
         if (action.totalRounds !== undefined) {

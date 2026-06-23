@@ -13,25 +13,33 @@ export function GameEnded({ gameState, isHost, dispatch }: Props) {
   const router = useRouter();
   const { teams } = gameState;
 
-  const winner =
-    teams[0].score > teams[1].score
-      ? teams[0]
-      : teams[1].score > teams[0].score
-      ? teams[1]
-      : null;
+  const singleTeam = teams.length === 1;
+  const maxScore = Math.max(...teams.map((t) => t.score));
+  const topTeams = teams.filter((t) => t.score === maxScore);
+  const winner = !singleTeam && topTeams.length === 1 ? topTeams[0] : null;
 
-  const sortedIndices = ([0, 1] as Array<0 | 1>).sort(
-    (a, b) => teams[b].score - teams[a].score
-  );
+  const sorted = [...teams].sort((a, b) => b.score - a.score);
 
   return (
     <div className="flex flex-col items-center justify-center h-dvh bg-gradient-to-b from-gray-950 to-gray-900 px-6 py-6 gap-5 overflow-hidden">
       {/* Trophy */}
-      <div className="text-6xl animate-bounce">{winner ? "🏆" : "🤝"}</div>
+      <div className="text-6xl animate-bounce">
+        {singleTeam ? "🎉" : winner ? "🏆" : "🤝"}
+      </div>
 
       {/* Winner announcement */}
       <div className="text-center space-y-1">
-        {winner ? (
+        {singleTeam ? (
+          <>
+            <p className="text-gray-400 text-base">כל הכבוד!</p>
+            <h2
+              className="text-4xl font-black text-white"
+              style={{ textShadow: "0 0 40px rgba(230,57,70,0.5)" }}
+            >
+              {teams[0].score} נקודות!
+            </h2>
+          </>
+        ) : winner ? (
           <>
             <p className="text-gray-400 text-base">המנצחים הם...</p>
             <h2
@@ -51,12 +59,12 @@ export function GameEnded({ gameState, isHost, dispatch }: Props) {
 
       {/* Final scores */}
       <div className="w-full max-w-xs space-y-2">
-        {sortedIndices.map((i) => (
+        {sorted.map((team) => (
           <div
-            key={i}
+            key={team.id}
             className="flex items-center justify-between px-5 py-3 rounded-2xl"
             style={
-              winner && teams[i].id === winner.id
+              winner && team.id === winner.id
                 ? {
                     background: "rgba(230,57,70,0.15)",
                     border: "1.5px solid rgba(230,57,70,0.4)",
@@ -68,14 +76,14 @@ export function GameEnded({ gameState, isHost, dispatch }: Props) {
             }
           >
             <div className="flex items-center gap-3">
-              {winner && teams[i].id === winner.id && (
+              {winner && team.id === winner.id && (
                 <span className="text-lg">🥇</span>
               )}
-              {!winner && <span className="text-lg">🏅</span>}
-              <span className="text-white font-bold text-lg">{teams[i].name}</span>
+              {!winner && !singleTeam && <span className="text-lg">🏅</span>}
+              <span className="text-white font-bold text-lg">{team.name}</span>
             </div>
             <span className="text-2xl font-black text-white">
-              {teams[i].score}
+              {team.score}
             </span>
           </div>
         ))}

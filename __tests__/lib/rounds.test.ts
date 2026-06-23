@@ -110,6 +110,72 @@ describe("nextTurn round counting", () => {
   });
 });
 
+// ─── N-team turn rotation ────────────────────────────────────────────────────
+
+describe("nextTurn with 1 team", () => {
+  const make1Team = (overrides: Partial<GameState> = {}): GameState => ({
+    ...DEFAULT_GAME_STATE,
+    teams: [{ id: 0, name: "קבוצה א", score: 0 }],
+    ...overrides,
+  });
+
+  it("stays on team 0 after every turn", () => {
+    const s = make1Team({ activeTeam: 0, currentRound: 1, totalRounds: 3, cardQueue: [FAKE_CARD] });
+    expect(nextTurn(s).activeTeam).toBe(0);
+  });
+
+  it("increments round after team 0 finishes (only team = last team)", () => {
+    const s = make1Team({ activeTeam: 0, currentRound: 1, totalRounds: 3, cardQueue: [FAKE_CARD] });
+    expect(nextTurn(s).currentRound).toBe(2);
+  });
+
+  it("ends game after last round", () => {
+    const s = make1Team({ activeTeam: 0, currentRound: 3, totalRounds: 3, cardQueue: [FAKE_CARD] });
+    expect(nextTurn(s).phase).toBe("ended");
+  });
+});
+
+describe("nextTurn with 3 teams", () => {
+  const make3Teams = (overrides: Partial<GameState> = {}): GameState => ({
+    ...DEFAULT_GAME_STATE,
+    teams: [
+      { id: 0, name: "א", score: 0 },
+      { id: 1, name: "ב", score: 0 },
+      { id: 2, name: "ג", score: 0 },
+    ],
+    ...overrides,
+  });
+
+  it("rotates 0 → 1 → 2 → 0", () => {
+    const s0 = make3Teams({ activeTeam: 0, currentRound: 1, totalRounds: 2, cardQueue: [FAKE_CARD] });
+    const s1 = nextTurn(s0);
+    expect(s1.activeTeam).toBe(1);
+    const s2 = nextTurn({ ...s1, cardQueue: [FAKE_CARD] });
+    expect(s2.activeTeam).toBe(2);
+    const s3 = nextTurn({ ...s2, cardQueue: [FAKE_CARD] });
+    expect(s3.activeTeam).toBe(0);
+  });
+
+  it("increments round only after team 2 (last team) finishes", () => {
+    const s1 = make3Teams({ activeTeam: 0, currentRound: 1, totalRounds: 2, cardQueue: [FAKE_CARD] });
+    expect(nextTurn(s1).currentRound).toBe(1); // not yet
+    const s2 = make3Teams({ activeTeam: 1, currentRound: 1, totalRounds: 2, cardQueue: [FAKE_CARD] });
+    expect(nextTurn(s2).currentRound).toBe(1); // not yet
+    const s3 = make3Teams({ activeTeam: 2, currentRound: 1, totalRounds: 2, cardQueue: [FAKE_CARD] });
+    expect(nextTurn(s3).currentRound).toBe(2); // round complete
+  });
+
+  it("ends game after last team in last round", () => {
+    const s = make3Teams({ activeTeam: 2, currentRound: 2, totalRounds: 2, cardQueue: [FAKE_CARD] });
+    expect(nextTurn(s).phase).toBe("ended");
+  });
+
+  it("does NOT end game when team 1 finishes last round (team 2 still pending)", () => {
+    const s = make3Teams({ activeTeam: 1, currentRound: 2, totalRounds: 2, cardQueue: [FAKE_CARD] });
+    expect(nextTurn(s).phase).toBe("claiming");
+  });
+});
+
 // ─── resetGame round handling ─────────────────────────────────────────────────
 
 describe("resetGame round handling", () => {

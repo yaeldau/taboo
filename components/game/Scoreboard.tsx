@@ -8,8 +8,8 @@ export function Scoreboard({ gameState }: Props) {
   const { teams, activeTeam } = gameState;
 
   return (
-    <div className="grid grid-cols-2 gap-3 w-full">
-      {([0, 1] as const).map((i) => (
+    <div className={`grid gap-3 w-full ${teams.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+      {teams.map((team, i) => (
         <div
           key={i}
           className="rounded-2xl p-4 text-center transition-all"
@@ -25,8 +25,8 @@ export function Scoreboard({ gameState }: Props) {
                 }
           }
         >
-          <div className="text-xs text-gray-400 truncate mb-1">{teams[i].name}</div>
-          <div className="text-4xl font-black text-white">{teams[i].score}</div>
+          <div className="text-xs text-gray-400 truncate mb-1">{team.name}</div>
+          <div className="text-4xl font-black text-white">{team.score}</div>
           {activeTeam === i && (
             <div className="text-xs mt-1" style={{ color: "#e63946" }}>
               ▶ משחק עכשיו

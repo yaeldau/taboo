@@ -7,8 +7,8 @@ import { ExitButton } from "@/components/game/ExitButton";
 interface Props {
   gameState: GameState;
   isHost: boolean;
-  myTeam: 0 | 1 | null;
-  joinTeam: (teamId: 0 | 1 | null) => void;
+  myTeam: number | null;
+  joinTeam: (teamId: number | null) => void;
   dispatch: (action: GameAction) => void;
 }
 
@@ -23,7 +23,7 @@ function OutcomeIcon({ outcome }: { outcome: TurnResult["outcome"] }) {
 export function TurnSummary({ gameState, isHost, myTeam, joinTeam, dispatch }: Props) {
   const [advancing, setAdvancing] = useState(false);
   const { turnResults, teams, activeTeam, currentRound, totalRounds } = gameState;
-  const isLastTurn = activeTeam === 1 && currentRound === totalRounds;
+  const isLastTurn = activeTeam === teams.length - 1 && currentRound === totalRounds;
 
   function handleNextTurn() {
     if (advancing) return;
@@ -103,8 +103,8 @@ export function TurnSummary({ gameState, isHost, myTeam, joinTeam, dispatch }: P
       )}
 
       {/* Scores */}
-      <div className="grid grid-cols-2 gap-3">
-        {([0, 1] as const).map((i) => (
+      <div className={`grid gap-3 ${teams.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+        {teams.map((team, i) => (
           <div
             key={i}
             className="text-center py-2 rounded-xl"
@@ -117,8 +117,8 @@ export function TurnSummary({ gameState, isHost, myTeam, joinTeam, dispatch }: P
                 : { background: "rgba(255,255,255,0.04)" }
             }
           >
-            <div className="text-xs text-gray-400 mb-0.5">{teams[i].name}</div>
-            <div className="text-2xl font-black text-white">{teams[i].score}</div>
+            <div className="text-xs text-gray-400 mb-0.5">{team.name}</div>
+            <div className="text-2xl font-black text-white">{team.score}</div>
           </div>
         ))}
       </div>
@@ -149,15 +149,15 @@ export function TurnSummary({ gameState, isHost, myTeam, joinTeam, dispatch }: P
       {myTeam === null && (
         <div className="flex-shrink-0 pt-1">
           <p className="text-gray-600 text-xs text-center mb-1.5">הצטרף לקבוצה</p>
-          <div className="grid grid-cols-2 gap-2">
-            {([0, 1] as const).map((i) => (
+          <div className="flex flex-wrap gap-2 justify-center">
+            {teams.map((team, i) => (
               <button
                 key={i}
                 onClick={() => joinTeam(i)}
-                className="py-2 rounded-xl text-sm font-bold touch-manipulation active:scale-95 transition-all"
+                className="flex-1 min-w-[5rem] py-2 rounded-xl text-sm font-bold touch-manipulation active:scale-95 transition-all"
                 style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#9ca3af" }}
               >
-                {teams[i].name}
+                {team.name}
               </button>
             ))}
           </div>

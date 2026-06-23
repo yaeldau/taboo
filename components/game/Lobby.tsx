@@ -14,11 +14,11 @@ interface Props {
   roomId: string;
   playerId: string;
   playerName: string;
-  myTeam: 0 | 1 | null;
+  myTeam: number | null;
   players: PlayerPresence[];
   dispatch: (action: GameAction) => void;
   setPlayerName: (name: string) => void;
-  joinTeam: (teamId: 0 | 1 | null) => void;
+  joinTeam: (teamId: number | null) => void;
 }
 
 export function Lobby({
@@ -33,10 +33,9 @@ export function Lobby({
   setPlayerName,
   joinTeam,
 }: Props) {
-  const [teamNames, setTeamNames] = useState<[string, string]>([
-    gameState.teams[0].name,
-    gameState.teams[1].name,
-  ]);
+  const [teamNames, setTeamNames] = useState<string[]>(
+    gameState.teams.map((t) => t.name)
+  );
   const [totalRounds, setTotalRounds] = useState(gameState.totalRounds);
   const [turnDurationMs, setTurnDurationMs] = useState(gameState.turnDurationMs);
   const [copied, setCopied] = useState(false);
@@ -77,9 +76,25 @@ export function Lobby({
     dispatch({ type: "update_lobby_settings", totalRounds: next });
   }
 
-  function updateTeamName(index: 0 | 1, value: string) {
-    const next: [string, string] = [teamNames[0], teamNames[1]];
-    next[index] = value.slice(0, 12);
+  const TEAM_LETTERS = ["א", "ב", "ג", "ד", "ה", "ו"];
+
+  function updateTeamName(index: number, value: string) {
+    const next = teamNames.map((n, i) => (i === index ? value.slice(0, 12) : n));
+    setTeamNames(next);
+    dispatch({ type: "update_lobby_settings", teamNames: next });
+  }
+
+  function addTeam() {
+    if (teamNames.length >= 6) return;
+    const letter = TEAM_LETTERS[teamNames.length] ?? String(teamNames.length + 1);
+    const next = [...teamNames, `קבוצה ${letter}`];
+    setTeamNames(next);
+    dispatch({ type: "update_lobby_settings", teamNames: next });
+  }
+
+  function removeTeam(index: number) {
+    if (teamNames.length <= 1) return;
+    const next = teamNames.filter((_, i) => i !== index);
     setTeamNames(next);
     dispatch({ type: "update_lobby_settings", teamNames: next });
   }
@@ -89,7 +104,7 @@ export function Lobby({
     if (trimmed) setPlayerName(trimmed);
   }
 
-  const teamPlayers = (teamId: 0 | 1) => players.filter((p) => p.teamId === teamId);
+  const teamPlayers = (teamId: number) => players.filter((p) => p.teamId === teamId);
 
   return (
     <div className="flex flex-col h-dvh bg-gradient-to-b from-gray-950 to-gray-900 px-5 pt-4 pb-4">
@@ -157,28 +172,40 @@ export function Lobby({
           <p className="text-gray-500 text-xs text-center uppercase tracking-widest">
             {isHost ? "שמות וקבוצות" : "הצטרף לקבוצה"}
           </p>
-          <div className="grid grid-cols-2 gap-3">
-            {([0, 1] as const).map((i) => {
+          <div className={`grid gap-3 ${teamNames.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+            {(isHost ? teamNames : gameState.teams.map((t) => t.name)).map((name, i) => {
               const members = teamPlayers(i);
               const isMyTeam = myTeam === i;
               return (
                 <div key={i} className="flex flex-col gap-1.5">
                   {isHost ? (
-                    <input
-                      type="text"
-                      inputMode="text"
-                      autoComplete="off"
-                      value={teamNames[i]}
-                      onChange={(e) => updateTeamName(i, e.target.value)}
-                      placeholder={i === 0 ? "קבוצה א" : "קבוצה ב"}
-                      className="text-center text-sm font-bold rounded-xl py-2 px-3 text-white outline-none transition-colors"
-                      style={{
-                        background: "rgba(255,255,255,0.06)",
-                        border: "1px solid rgba(255,255,255,0.15)",
-                      }}
-                      onFocus={(e) => (e.target.style.border = "1px solid rgba(230,57,70,0.6)")}
-                      onBlur={(e) => (e.target.style.border = "1px solid rgba(255,255,255,0.15)")}
-                    />
+                    <div className="flex gap-1">
+                      <input
+                        type="text"
+                        inputMode="text"
+                        autoComplete="off"
+                        value={name}
+                        onChange={(e) => updateTeamName(i, e.target.value)}
+                        placeholder={`קבוצה ${TEAM_LETTERS[i] ?? i + 1}`}
+                        className="flex-1 text-center text-sm font-bold rounded-xl py-2 px-2 text-white outline-none transition-colors min-w-0"
+                        style={{
+                          background: "rgba(255,255,255,0.06)",
+                          border: "1px solid rgba(255,255,255,0.15)",
+                        }}
+                        onFocus={(e) => (e.target.style.border = "1px solid rgba(230,57,70,0.6)")}
+                        onBlur={(e) => (e.target.style.border = "1px solid rgba(255,255,255,0.15)")}
+                      />
+                      {teamNames.length > 1 && (
+                        <button
+                          onClick={() => removeTeam(i)}
+                          className="w-7 h-full rounded-xl text-gray-500 text-xs flex-shrink-0 flex items-center justify-center transition-all active:scale-90 touch-manipulation"
+                          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                          aria-label="הסר קבוצה"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
                   ) : (
                     <div
                       className="text-center text-sm font-bold rounded-xl py-2 px-3 text-white"
@@ -187,7 +214,7 @@ export function Lobby({
                         border: "1px solid rgba(255,255,255,0.08)",
                       }}
                     >
-                      {gameState.teams[i].name}
+                      {name}
                     </div>
                   )}
 
@@ -233,6 +260,16 @@ export function Lobby({
               );
             })}
           </div>
+          {/* Add team button — host only, max 6 teams */}
+          {isHost && teamNames.length < 6 && (
+            <button
+              onClick={addTeam}
+              className="w-full py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 touch-manipulation mt-1"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(255,255,255,0.15)", color: "#6b7280" }}
+            >
+              + הוסף קבוצה
+            </button>
+          )}
         </div>
 
         {/* Rounds picker */}
@@ -308,7 +345,7 @@ export function Lobby({
         ) : (
           <div className="text-center space-y-1 py-2">
             <p className="text-gray-400 text-base animate-pulse">ממתין למארח להתחיל...</p>
-            <p className="text-gray-600 text-sm">{gameState.teams[0].name} נגד {gameState.teams[1].name}</p>
+            <p className="text-gray-600 text-sm">{gameState.teams.map((t) => t.name).join(" · ")}</p>
           </div>
         )}
       </div>

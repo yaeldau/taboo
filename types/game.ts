@@ -1,7 +1,7 @@
 export type GamePhase = "lobby" | "claiming" | "playing" | "turn_summary" | "ended";
 
 export interface Team {
-  id: 0 | 1;
+  id: number;
   name: string;
   score: number;
 }
@@ -21,14 +21,14 @@ export interface TurnResult {
 export interface PlayerPresence {
   playerId: string;
   name: string;
-  teamId: 0 | 1 | null;
+  teamId: number | null;
   joined_at: number;
 }
 
 export interface GameState {
   phase: GamePhase;
-  teams: [Team, Team];
-  activeTeam: 0 | 1;
+  teams: Team[];
+  activeTeam: number;
   currentCard: Card | null;
   /** Remaining cards for this game, shuffled at start */
   cardQueue: Card[];
