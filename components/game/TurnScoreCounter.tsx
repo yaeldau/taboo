@@ -10,7 +10,7 @@ export function TurnScoreCounter({ results }: Props) {
 
   const netLabel = net > 0 ? `+${net}` : String(net);
   const netColor =
-    net > 0 ? "#4ade80" : net < 0 ? "#f87171" : "rgba(255,255,255,0.15)";
+    net > 0 ? "#4ade80" : net < 0 ? "#f87171" : "rgba(255,255,255,0.45)";
 
   return (
     <div className="flex items-center justify-center">
@@ -23,7 +23,7 @@ export function TurnScoreCounter({ results }: Props) {
       >
         {/* Net score — always rendered, fixed width */}
         <span
-          className="w-12 text-center text-sm font-black tabular-nums py-1.5 transition-colors duration-300"
+          className="w-12 flex-shrink-0 text-center text-sm font-black tabular-nums py-1.5 transition-colors duration-300"
           style={{ color: netColor }}
         >
           {netLabel}
