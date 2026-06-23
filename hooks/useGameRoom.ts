@@ -14,6 +14,7 @@ import {
   resetGame,
   timeRemainingMs,
   redactStateForBroadcast,
+  updateLobbySettings,
 } from "@/lib/game";
 import { playSound } from "@/lib/sounds";
 
@@ -25,6 +26,7 @@ export type GameAction =
   | "end_game"
   | "reset"
   | { type: "start_game"; teamNames?: [string, string]; totalRounds?: number; turnDurationMs?: number }
+  | { type: "update_lobby_settings"; teamNames?: [string, string]; totalRounds?: number; turnDurationMs?: number }
   | { type: "claim_explainer"; playerId: string; playerName: string };
 
 function getOrCreatePlayerId(): string {
@@ -152,6 +154,8 @@ export function useGameRoom(roomId: string) {
           case "end_game":  return broadcast(endGame(s));
           case "reset":     return broadcast(resetGame(s));
         }
+      } else if (action.type === "update_lobby_settings") {
+        broadcast(updateLobbySettings(s, action));
       } else if (action.type === "start_game") {
         let base = s;
         if (action.teamNames) {
@@ -239,7 +243,17 @@ export function useGameRoom(roomId: string) {
       })
       .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState<PlayerPresence>();
-        const list = Object.values(state).flatMap((arr) => arr);
+        const raw = Object.values(state).flatMap((arr) => arr);
+        // Deduplicate by playerId — keep the most recent entry per player so a
+        // player can't appear in both teams after reconnecting or re-tracking.
+        const byPlayer = new Map<string, PlayerPresence>();
+        for (const p of raw) {
+          const existing = byPlayer.get(p.playerId);
+          if (!existing || p.joined_at > existing.joined_at) {
+            byPlayer.set(p.playerId, p);
+          }
+        }
+        const list = [...byPlayer.values()];
         setPlayers(list);
         setPlayerCount(list.length);
         const mine = list.find((p) => p.playerId === playerIdRef.current);

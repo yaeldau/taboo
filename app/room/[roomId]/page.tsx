@@ -12,6 +12,7 @@ import { TurnSummary } from "@/components/game/TurnSummary";
 import { GameEnded } from "@/components/game/GameEnded";
 import { TurnScoreCounter } from "@/components/game/TurnScoreCounter";
 import { ClaimTurn } from "@/components/game/ClaimTurn";
+import { ExitButton } from "@/components/game/ExitButton";
 import { Volume2, VolumeX } from "lucide-react";
 
 export default function RoomPage() {
@@ -108,6 +109,7 @@ export default function RoomPage() {
     return (
       <ClaimTurn
         gameState={gameState}
+        isHost={isHost}
         playerId={playerId}
         myTeam={myTeam}
         players={players}
@@ -142,21 +144,24 @@ export default function RoomPage() {
             )}
           </div>
 
-          {/* Timer + mute button stacked */}
+          {/* Timer + controls stacked */}
           <div className="flex flex-col items-center gap-1 flex-shrink-0">
             <Timer gameState={gameState} />
-            <button
-              onClick={toggleMute}
-              className="flex items-center justify-center w-7 h-7 rounded-full touch-manipulation transition-colors active:scale-90"
-              style={{ background: "rgba(255,255,255,0.07)" }}
-              aria-label={muted ? "הפעל צלילים" : "השתק צלילים"}
-            >
-              {muted ? (
-                <VolumeX className="w-4 h-4 text-gray-500" />
-              ) : (
-                <Volume2 className="w-4 h-4 text-gray-400" />
-              )}
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={toggleMute}
+                className="flex items-center justify-center w-7 h-7 rounded-full touch-manipulation transition-colors active:scale-90"
+                style={{ background: "rgba(255,255,255,0.07)" }}
+                aria-label={muted ? "הפעל צלילים" : "השתק צלילים"}
+              >
+                {muted ? (
+                  <VolumeX className="w-4 h-4 text-gray-500" />
+                ) : (
+                  <Volume2 className="w-4 h-4 text-gray-400" />
+                )}
+              </button>
+              <ExitButton isHost={isHost} dispatch={dispatch} />
+            </div>
           </div>
 
           {/* Team 1 — left side in RTL */}
@@ -227,17 +232,6 @@ export default function RoomPage() {
           <ActionButtons dispatch={dispatch} isExplainer={isExplainer} />
         </div>
 
-        {/* End game — subtle, host only */}
-        {isHost && (
-          <div className="pb-3 text-center">
-            <button
-              onClick={() => dispatch("end_game")}
-              className="text-gray-600 text-sm py-1 px-4 touch-manipulation active:text-gray-400 transition-colors"
-            >
-              סיים משחק
-            </button>
-          </div>
-        )}
       </div>
     );
   }

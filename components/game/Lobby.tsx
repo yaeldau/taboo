@@ -57,13 +57,16 @@ export function Lobby({
   }
 
   function adjustRounds(delta: number) {
-    setTotalRounds((r) => Math.min(10, Math.max(1, r + delta)));
+    const next = Math.min(10, Math.max(1, totalRounds + delta));
+    setTotalRounds(next);
+    dispatch({ type: "update_lobby_settings", totalRounds: next });
   }
 
   function updateTeamName(index: 0 | 1, value: string) {
     const next: [string, string] = [teamNames[0], teamNames[1]];
     next[index] = value.slice(0, 12);
     setTeamNames(next);
+    dispatch({ type: "update_lobby_settings", teamNames: next });
   }
 
   function handleNameBlur() {
@@ -255,7 +258,7 @@ export function Lobby({
               {DURATION_OPTIONS.map((ms) => (
                 <button
                   key={ms}
-                  onClick={() => setTurnDurationMs(ms)}
+                  onClick={() => { setTurnDurationMs(ms); dispatch({ type: "update_lobby_settings", turnDurationMs: ms }); }}
                   className="py-2 rounded-xl text-sm font-black transition-all active:scale-95"
                   style={
                     turnDurationMs === ms

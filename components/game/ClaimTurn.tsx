@@ -2,16 +2,18 @@
 
 import type { GameState, PlayerPresence } from "@/types/game";
 import type { GameAction } from "@/hooks/useGameRoom";
+import { ExitButton } from "@/components/game/ExitButton";
 
 interface Props {
   gameState: GameState;
+  isHost: boolean;
   playerId: string;
   myTeam: 0 | 1 | null;
   players: PlayerPresence[];
   dispatch: (action: GameAction) => void;
 }
 
-export function ClaimTurn({ gameState, playerId, myTeam, players, dispatch }: Props) {
+export function ClaimTurn({ gameState, isHost, playerId, myTeam, players, dispatch }: Props) {
   const { teams, activeTeam, currentRound, totalRounds } = gameState;
 
   const activeTeamPlayers = players.filter((p) => p.teamId === activeTeam);
@@ -24,7 +26,12 @@ export function ClaimTurn({ gameState, playerId, myTeam, players, dispatch }: Pr
   }
 
   return (
-    <div className="flex flex-col h-dvh bg-gradient-to-b from-gray-950 to-gray-900 px-5 pt-6 pb-6 gap-4">
+    <div className="flex flex-col h-dvh bg-gradient-to-b from-gray-950 to-gray-900 px-5 pt-4 pb-6 gap-4">
+      {/* Top bar with exit */}
+      <div className="flex justify-start flex-shrink-0">
+        <ExitButton isHost={isHost} dispatch={dispatch} />
+      </div>
+
       {/* Header */}
       <div className="text-center space-y-1">
         <p className="text-gray-500 text-sm">

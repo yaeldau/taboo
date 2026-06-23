@@ -12,6 +12,7 @@ import {
   timeRemainingMs,
   redactStateForBroadcast,
   computeTurnStats,
+  updateLobbySettings,
 } from "@/lib/game";
 import { DEFAULT_GAME_STATE, TURN_DURATION_MS } from "@/types/game";
 import type { GameState } from "@/types/game";
@@ -29,6 +30,32 @@ const makeState = (overrides: Partial<GameState> = {}): GameState => ({
 
 const FAKE_CARD = { word: "כלב", forbidden: ["חיה", "נביחה", "גור", "מחמד", "זנב"] as [string,string,string,string,string] };
 const FAKE_CARD_2 = { word: "שמש", forbidden: ["חם", "אור", "כוכב", "קרניים", "שמיים"] as [string,string,string,string,string] };
+
+// ─── updateLobbySettings ────────────────────────────────────────────────────
+
+describe("updateLobbySettings", () => {
+  it("updates turnDurationMs", () => {
+    const next = updateLobbySettings(makeState(), { turnDurationMs: 45_000 });
+    expect(next.turnDurationMs).toBe(45_000);
+  });
+
+  it("updates totalRounds", () => {
+    const next = updateLobbySettings(makeState(), { totalRounds: 5 });
+    expect(next.totalRounds).toBe(5);
+  });
+
+  it("updates team names", () => {
+    const next = updateLobbySettings(makeState(), { teamNames: ["אריות", "נמרים"] });
+    expect(next.teams[0].name).toBe("אריות");
+    expect(next.teams[1].name).toBe("נמרים");
+  });
+
+  it("is a no-op outside lobby phase", () => {
+    const playing = makeState({ phase: "playing" });
+    const next = updateLobbySettings(playing, { turnDurationMs: 45_000 });
+    expect(next).toBe(playing);
+  });
+});
 
 // ─── startGame ───────────────────────────────────────────────────────────────
 

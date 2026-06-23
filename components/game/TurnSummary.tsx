@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { GameState, TurnResult } from "@/types/game";
 import type { GameAction } from "@/hooks/useGameRoom";
 import { Button } from "@/components/ui/button";
+import { ExitButton } from "@/components/game/ExitButton";
 
 interface Props {
   gameState: GameState;
@@ -44,6 +45,11 @@ export function TurnSummary({ gameState, isHost, dispatch }: Props) {
 
   return (
     <div className="flex flex-col h-dvh bg-gradient-to-b from-gray-950 to-gray-900 px-5 pt-4 pb-4 gap-2 overflow-hidden">
+      {/* Exit */}
+      <div className="flex justify-start flex-shrink-0">
+        <ExitButton isHost={isHost} dispatch={dispatch} />
+      </div>
+
       {/* Header */}
       <div className="text-center space-y-0.5">
         <div className="text-3xl">⏱️</div>
@@ -118,27 +124,18 @@ export function TurnSummary({ gameState, isHost, dispatch }: Props) {
       {/* Actions */}
       <div className="space-y-2">
         {isHost ? (
-          <>
-            <Button
-              size="lg"
-              disabled={advancing}
-              onClick={handleNextTurn}
-              className="w-full h-12 text-lg font-black rounded-2xl text-white border-0 touch-manipulation disabled:opacity-50"
-              style={{
-                background: "linear-gradient(135deg, #e63946, #c1121f)",
-                boxShadow: "0 6px 24px rgba(230,57,70,0.4)",
-              }}
-            >
-              {advancing ? "..." : isLastTurn ? "סיום משחק ←" : "סיבוב הבא ←"}
-            </Button>
-            <button
-              onClick={() => dispatch("end_game")}
-              className="w-full py-2.5 rounded-xl text-gray-400 text-sm font-semibold touch-manipulation active:text-white transition-colors"
-              style={{ border: "1px solid rgba(255,255,255,0.1)" }}
-            >
-              סיים משחק
-            </button>
-          </>
+          <Button
+            size="lg"
+            disabled={advancing}
+            onClick={handleNextTurn}
+            className="w-full h-12 text-lg font-black rounded-2xl text-white border-0 touch-manipulation disabled:opacity-50"
+            style={{
+              background: "linear-gradient(135deg, #e63946, #c1121f)",
+              boxShadow: "0 6px 24px rgba(230,57,70,0.4)",
+            }}
+          >
+            {advancing ? "..." : isLastTurn ? "סיום משחק ←" : "סיבוב הבא ←"}
+          </Button>
         ) : (
           <div className="text-center text-gray-500 animate-pulse py-2">
             ממתין למארח...

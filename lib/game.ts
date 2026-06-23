@@ -11,6 +11,26 @@ function drawFromQueue(state: GameState): {
   return { card: card ?? null, queue: rest };
 }
 
+export function updateLobbySettings(
+  state: GameState,
+  settings: { teamNames?: [string, string]; totalRounds?: number; turnDurationMs?: number },
+): GameState {
+  if (state.phase !== "lobby") return state;
+  let next = { ...state };
+  if (settings.teamNames) {
+    next = {
+      ...next,
+      teams: [
+        { ...next.teams[0], name: settings.teamNames[0] },
+        { ...next.teams[1], name: settings.teamNames[1] },
+      ] as [Team, Team],
+    };
+  }
+  if (settings.totalRounds !== undefined) next = { ...next, totalRounds: settings.totalRounds };
+  if (settings.turnDurationMs !== undefined) next = { ...next, turnDurationMs: settings.turnDurationMs };
+  return next;
+}
+
 /** Transitions from lobby to claiming phase; shuffles deck but waits for explainer to be claimed. */
 export function startGame(state: GameState): GameState {
   return {
