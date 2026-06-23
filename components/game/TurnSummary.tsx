@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { GameState, TurnResult, PlayerPresence } from "@/types/game";
 import type { GameAction } from "@/hooks/useGameRoom";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,21 @@ function OutcomeIcon({ outcome }: { outcome: TurnResult["outcome"] }) {
 
 export function TurnSummary({ gameState, isHost, myTeam, joinTeam, dispatch }: Props) {
   const [advancing, setAdvancing] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleInvite = useCallback(async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try { await navigator.share({ title: "טאבו", url }); return; } catch (e) {
+        if (e instanceof Error && e.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  }, []);
   const { turnResults, teams, activeTeam, currentRound, totalRounds } = gameState;
   const isLastTurn = activeTeam === teams.length - 1 && currentRound === totalRounds;
 
@@ -47,9 +62,16 @@ export function TurnSummary({ gameState, isHost, myTeam, joinTeam, dispatch }: P
 
   return (
     <div className="flex flex-col h-dvh bg-gradient-to-b from-gray-950 to-gray-900 px-5 pt-4 pb-4 gap-2 overflow-hidden">
-      {/* Exit */}
-      <div className="flex justify-start flex-shrink-0">
+      {/* Top row: exit + invite */}
+      <div className="flex items-center justify-between flex-shrink-0">
         <ExitButton isHost={isHost} dispatch={dispatch} />
+        <button
+          onClick={handleInvite}
+          className="text-xs py-1 px-3 rounded-xl touch-manipulation active:scale-95 transition-all"
+          style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: copied ? "#4ade80" : "#9ca3af" }}
+        >
+          {copied ? "הועתק! ✓" : "הזמן 📨"}
+        </button>
       </div>
 
       {/* Header */}

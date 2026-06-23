@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { GameState, PlayerPresence } from "@/types/game";
 import type { GameAction } from "@/hooks/useGameRoom";
 import { ExitButton } from "@/components/game/ExitButton";
@@ -30,6 +30,7 @@ export function ClaimTurn({
 }: Props) {
   const { teams, activeTeam, currentRound, totalRounds } = gameState;
   const [nameInput, setNameInput] = useState(playerName);
+  const [copied, setCopied] = useState(false);
 
   const myName = players.find((p) => p.playerId === playerId)?.name || nameInput || "שחקן";
   const isMyTurn = myTeam === activeTeam;
@@ -43,14 +44,35 @@ export function ClaimTurn({
     if (trimmed) setPlayerName(trimmed);
   }
 
+  const handleInvite = useCallback(async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try { await navigator.share({ title: "טאבו", url }); return; } catch (e) {
+        if (e instanceof Error && e.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  }, []);
+
   return (
     <div className="flex flex-col h-dvh bg-gradient-to-b from-gray-950 to-gray-900 px-5 pt-4 pb-5 gap-3 overflow-y-auto">
-      {/* Top row: exit + round info */}
+      {/* Top row: exit + round info + invite */}
       <div className="flex items-center justify-between flex-shrink-0">
         <ExitButton isHost={isHost} dispatch={dispatch} />
         <span className="text-gray-500 text-xs">
           סיבוב {currentRound} מתוך {totalRounds}
         </span>
+        <button
+          onClick={handleInvite}
+          className="text-xs py-1 px-3 rounded-xl touch-manipulation active:scale-95 transition-all"
+          style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: copied ? "#4ade80" : "#9ca3af" }}
+        >
+          {copied ? "הועתק! ✓" : "הזמן 📨"}
+        </button>
       </div>
 
       {/* Heading */}
