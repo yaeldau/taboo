@@ -1,8 +1,9 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import type { GameState, TurnResult, PlayerPresence } from "@/types/game";
 import type { GameAction } from "@/hooks/useGameRoom";
 import { Button } from "@/components/ui/button";
 import { ExitButton } from "@/components/game/ExitButton";
+import { useInvite } from "@/hooks/useInvite";
 
 interface Props {
   gameState: GameState;
@@ -22,21 +23,7 @@ function OutcomeIcon({ outcome }: { outcome: TurnResult["outcome"] }) {
 
 export function TurnSummary({ gameState, isHost, myTeam, joinTeam, dispatch }: Props) {
   const [advancing, setAdvancing] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const handleInvite = useCallback(async () => {
-    const url = window.location.href;
-    if (navigator.share) {
-      try { await navigator.share({ title: "טאבו", url }); return; } catch (e) {
-        if (e instanceof Error && e.name === "AbortError") return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
-  }, []);
+  const { invite: handleInvite, copied } = useInvite();
   const { turnResults, teams, activeTeam, currentRound, totalRounds } = gameState;
   const isLastTurn = activeTeam === teams.length - 1 && currentRound === totalRounds;
 

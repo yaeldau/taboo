@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import type { GameState, PlayerPresence } from "@/types/game";
 import type { GameAction } from "@/hooks/useGameRoom";
 import { ExitButton } from "@/components/game/ExitButton";
+import { useInvite } from "@/hooks/useInvite";
 
 interface Props {
   gameState: GameState;
@@ -30,7 +31,7 @@ export function ClaimTurn({
 }: Props) {
   const { teams, activeTeam, currentRound, totalRounds } = gameState;
   const [nameInput, setNameInput] = useState(playerName);
-  const [copied, setCopied] = useState(false);
+  const { invite: handleInvite, copied } = useInvite();
 
   const myName = players.find((p) => p.playerId === playerId)?.name || nameInput || "שחקן";
   const isMyTurn = myTeam === activeTeam;
@@ -43,20 +44,6 @@ export function ClaimTurn({
     const trimmed = nameInput.trim();
     if (trimmed) setPlayerName(trimmed);
   }
-
-  const handleInvite = useCallback(async () => {
-    const url = window.location.href;
-    if (navigator.share) {
-      try { await navigator.share({ title: "טאבו", url }); return; } catch (e) {
-        if (e instanceof Error && e.name === "AbortError") return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
-  }, []);
 
   return (
     <div className="flex flex-col h-dvh bg-gradient-to-b from-gray-950 to-gray-900 px-5 pt-4 pb-5 gap-3 overflow-y-auto">
