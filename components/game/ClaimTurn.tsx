@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { GameState, PlayerPresence } from "@/types/game";
 import type { GameAction } from "@/hooks/useGameRoom";
 import { ExitButton } from "@/components/game/ExitButton";
+import { InviteLinkFallback } from "@/components/game/InviteLinkFallback";
 import { useInvite } from "@/hooks/useInvite";
 
 interface Props {
@@ -31,7 +32,7 @@ export function ClaimTurn({
 }: Props) {
   const { teams, activeTeam, currentRound, totalRounds } = gameState;
   const [nameInput, setNameInput] = useState(playerName);
-  const { invite: handleInvite, copied } = useInvite();
+  const { invite: handleInvite, copied, manualUrl } = useInvite();
 
   const myName = players.find((p) => p.playerId === playerId)?.name || nameInput || "שחקן";
   const isMyTurn = myTeam === activeTeam;
@@ -61,6 +62,8 @@ export function ClaimTurn({
           {copied ? "הועתק! ✓" : "הזמן 📨"}
         </button>
       </div>
+
+      {manualUrl && <InviteLinkFallback url={manualUrl} />}
 
       {/* Heading */}
       <div className="text-center flex-shrink-0">

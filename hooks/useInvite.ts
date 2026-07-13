@@ -23,23 +23,31 @@ function legacyCopy(text: string): boolean {
 
 export function useInvite() {
   const [copied, setCopied] = useState(false);
+  // Manual fallback lives in on-page DOM state rather than a browser dialog
+  // (window.prompt/alert) — dialogs can be silently blocked by browser
+  // policy, so they aren't actually a guaranteed fallback.
+  const [manualUrl, setManualUrl] = useState<string | null>(null);
 
   const invite = useCallback(async () => {
     const url = window.location.href;
-    const result = await inviteViaNavigator(url, navigator);
+    setManualUrl(null);
 
-    if (result === "shared") return;
+    // The whole chain is wrapped: merely *accessing* navigator.share or
+    // navigator.clipboard can throw in some browsers/Permissions-Policy
+    // configs, which previously left the button looking like a no-op.
+    try {
+      const result = await inviteViaNavigator(url, navigator);
+      if (result === "shared") return;
 
-    if (result === "copied" || legacyCopy(url)) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      return;
-    }
+      if (result === "copied" || legacyCopy(url)) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      }
+    } catch {}
 
-    // Last resort so the button is never a silent no-op: the browser's own
-    // prompt dialog lets the user select and copy the link manually.
-    window.prompt("העתק את הקישור להזמנה:", url);
+    setManualUrl(url);
   }, []);
 
-  return { invite, copied };
+  return { invite, copied, manualUrl };
 }

@@ -47,4 +47,18 @@ describe("inviteViaNavigator", () => {
     });
     expect(result).toBe("failed");
   });
+
+  it("propagates an error thrown while merely accessing navigator.clipboard, so callers must catch it too", async () => {
+    // Some browsers/Permissions-Policy configs throw on property access,
+    // not just on invocation — this documents that callers of
+    // inviteViaNavigator (useInvite) must wrap the call in try/catch.
+    const nav = {
+      get clipboard(): never {
+        throw new DOMException("Clipboard access is disabled", "SecurityError");
+      },
+    };
+    await expect(inviteViaNavigator("https://x.test/room/1", nav)).rejects.toThrow(
+      "Clipboard access is disabled"
+    );
+  });
 });

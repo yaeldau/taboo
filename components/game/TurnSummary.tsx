@@ -3,6 +3,7 @@ import type { GameState, TurnResult, PlayerPresence } from "@/types/game";
 import type { GameAction } from "@/hooks/useGameRoom";
 import { Button } from "@/components/ui/button";
 import { ExitButton } from "@/components/game/ExitButton";
+import { InviteLinkFallback } from "@/components/game/InviteLinkFallback";
 import { useInvite } from "@/hooks/useInvite";
 
 interface Props {
@@ -23,7 +24,7 @@ function OutcomeIcon({ outcome }: { outcome: TurnResult["outcome"] }) {
 
 export function TurnSummary({ gameState, isHost, myTeam, joinTeam, dispatch }: Props) {
   const [advancing, setAdvancing] = useState(false);
-  const { invite: handleInvite, copied } = useInvite();
+  const { invite: handleInvite, copied, manualUrl } = useInvite();
   const { turnResults, teams, activeTeam, currentRound, totalRounds } = gameState;
   const isLastTurn = activeTeam === teams.length - 1 && currentRound === totalRounds;
 
@@ -60,6 +61,8 @@ export function TurnSummary({ gameState, isHost, myTeam, joinTeam, dispatch }: P
           {copied ? "הועתק! ✓" : "הזמן 📨"}
         </button>
       </div>
+
+      {manualUrl && <InviteLinkFallback url={manualUrl} />}
 
       {/* Header */}
       <div className="text-center space-y-0.5">
