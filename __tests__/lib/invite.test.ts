@@ -1,7 +1,10 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { inviteViaNavigator } from "@/lib/invite";
 
 describe("inviteViaNavigator", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
   it("returns 'shared' when navigator.share succeeds", async () => {
     const share = vi.fn().mockResolvedValue(undefined);
     const result = await inviteViaNavigator("https://x.test/room/1", { share });
@@ -46,6 +49,18 @@ describe("inviteViaNavigator", () => {
       clipboard: { writeText },
     });
     expect(result).toBe("failed");
+  });
+
+  it("falls back to 'failed' when clipboard.writeText hangs forever instead of settling", async () => {
+    // Reproduces a real, observed browser bug: some environments never
+    // resolve or reject navigator.clipboard.writeText — without a timeout
+    // this would freeze the whole invite flow with no feedback forever.
+    const writeText = vi.fn(() => new Promise<void>(() => {}));
+    const resultPromise = inviteViaNavigator("https://x.test/room/1", {
+      clipboard: { writeText },
+    });
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(await resultPromise).toBe("failed");
   });
 
   it("propagates an error thrown while merely accessing navigator.clipboard, so callers must catch it too", async () => {
