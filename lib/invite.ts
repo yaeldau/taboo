@@ -28,9 +28,12 @@ export async function inviteViaNavigator(
 ): Promise<InviteResult> {
   if (nav.share) {
     try {
-      // No timeout here: the share sheet is a real user interaction and can
-      // legitimately stay open for a while (e.g. composing a message).
-      await nav.share({ title: "טאבו", url });
+      // Generous timeout: a share sheet is a real user interaction and can
+      // legitimately stay open for a while, but some non-standard browsers
+      // (observed: a Web-Share stub that never settles its promise) hang
+      // this call forever, which would otherwise freeze the whole flow
+      // before it ever reaches the clipboard/manual-copy fallback below.
+      await withTimeout(nav.share({ title: "טאבו", url }), 8000);
       return "shared";
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") return "shared";

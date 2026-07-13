@@ -63,6 +63,20 @@ describe("inviteViaNavigator", () => {
     expect(await resultPromise).toBe("failed");
   });
 
+  it("falls through to clipboard when navigator.share hangs forever instead of settling", async () => {
+    // Reproduces a real, observed bug in a non-standard browser (Atlas):
+    // navigator.share() never resolved or rejected at all, so the flow
+    // froze on the very first step before ever reaching the fallback.
+    const share = vi.fn(() => new Promise<void>(() => {}));
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const resultPromise = inviteViaNavigator("https://x.test/room/1", {
+      share,
+      clipboard: { writeText },
+    });
+    await vi.advanceTimersByTimeAsync(8000);
+    expect(await resultPromise).toBe("copied");
+  });
+
   it("propagates an error thrown while merely accessing navigator.clipboard, so callers must catch it too", async () => {
     // Some browsers/Permissions-Policy configs throw on property access,
     // not just on invocation — this documents that callers of
